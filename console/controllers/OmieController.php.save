@@ -1,0 +1,37 @@
+q<?php
+
+
+namespace console\controllers;
+
+use common\models\Filial;
+use common\models\ProdutoFilial;
+use Livepixel\MercadoLivre\Meli;
+use Yii;
+use yii\console\Controller;
+use yii\helpers\ArrayHelper;
+use yii\helpers\Console;
+
+class OmieController extends Controller
+{
+    public function actions()
+    {
+        return ArrayHelper::merge(parent::actions(), [
+            'consultaprodutos'      	    => 'console\controllers\actions\omie\ConsultaProdutosAction',
+            'consultacontacorrente' 	    => 'console\controllers\actions\omie\ConsultaContaCorrenteAction',
+            'criaproduto'           	    => 'console\controllers\actions\omie\CriaProdutoAction',
+	    'alteraproduto'	    	    => 'console\controllers\actions\omie\AlteraProdutoAction',
+	    'criaprodutotodos'      	    => 'console\controllers\actions\omie\CriaProdutoTodosAction',
+	    'alteraprodutotodos'    	    => 'console\controllers\actions\omie\AlteraProdutoTodosAction',
+	    'alteraprodutotodosdimensoes'   => 'console\controllers\actions\omie\AlteraProdutoTodosDimensoesAction',
+	    'criaprodutodibtodos'           => 'console\controllers\actions\omie\CriaProdutoDibTodosAction',
+	    'alteraprodutos'                => 'console\controllers\actions\omie\AlteraProdutosAction',
+	    'alteraprodutocodigopa'         => 'console\controllers\actions\omie\AlteraProdutoCodigoPAAction',
+	    'alteraprodutosparacodigopasp'  => 'console\controllers\actions\omie\AlteraProdutosParaCodigoPASPAction',
+	    'alteraprodutosparacodigopasparquivo'   => 'console\controllers\actions\omie\AlteraProdutosParaCodigoPASPArquivoAction',
+	    'alteraprodutoscorrigirduplicados'      => 'console\controllers\actions\omie\AlteraProdutosCorrigirDuplicadosAction',
+	    'alteradescricaotodos'                  => 'console\controllers\actions\omie\AlteraDescricaoTodosAction',
+	    'alterancmtodos'		    	    => 'console\controllers\actions\omie\AlteraProdutoTodosNCMAction',
+	    'criaprodutoscontaduplicada'            => 'console\controllers\actions\omie\CriaProdutosContaDuplicadaAction',
+        ]);
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "name": "yiisoft/yii2-app-advanced",
+    "description": "Yii 2 Advanced Application Template",
+    "keywords": [
+        "yii2",
+        "framework",
+        "advanced",
+        "application template"
+    ],
+    "homepage": "http://www.yiiframework.com/",
+    "type": "project",
+    "license": "BSD-3-Clause",
+    "support": {
+        "issues": "https://github.com/yiisoft/yii2/issues?state=open",
+        "forum": "http://www.yiiframework.com/forum/",
+        "wiki": "http://www.yiiframework.com/wiki/",
+        "irc": "irc://irc.freenode.net/yii",
+        "source": "https://github.com/yiisoft/yii2"
+    },
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=5.4.0",
+        "egulias/email-validator": "2.0",
+        "yiisoft/yii2": "*",
+        "yiisoft/yii2-bootstrap": "*",
+        "yiisoft/yii2-swiftmailer": "*",
+        "kartik-v/yii2-krajee-base": "v1.8.8",
+        "kartik-v/yii2-mpdf": "*",
+        "kartik-v/yii2-export": "*",
+        "kartik-v/yii2-widget-datepicker": "*",
+        "kartik-v/yii2-widget-datetimepicker": "*",
+        "inacho/php-credit-card-validator": "1.0.0",
+        "yiibr/yii2-br-validator": "dev-master",
+        "kartik-v/yii2-widget-fileinput": "dev-master",
+        "kartik-v/yii2-widget-select2": "dev-master",
+        "kartik-v/yii2-slider": "1.4.0.x-dev",
+        "stavarengo/php-sigep-fpdf": "dev-master",
+        "stavarengo/php-sigep": "dev-master",
+        "livepixel/mercado-livre": "*",
+        "kartik-v/yii2-widget-depdrop": "@dev",
+        "yiidoc/yii2-redactor": "*",
+        "linslin/yii2-curl": "*",
+        "yiisoft/yii2-httpclient": "^2.0",
+        "marketplacehub/php-skyhub-sdk": "^0.1.3",
+        "tecnickcom/tcpdf": "*",
+        "phpoffice/phpspreadsheet": "^1.8"
+    },
+    "require-dev": {
+        "yiisoft/yii2-codeception": "*",
+        "yiisoft/yii2-debug": "*",
+        "yiisoft/yii2-gii": "*",
+        "yiisoft/yii2-faker": "*"
+    },
+    "config": {
+        "process-timeout": 1800
+    },
+    "extra": {
+        "asset-installer-paths": {
+            "npm-asset-library": "vendor/npm",
+            "bower-asset-library": "vendor/bower"
+        }
+    }
+}

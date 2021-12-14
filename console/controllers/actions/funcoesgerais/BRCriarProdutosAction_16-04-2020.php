@@ -1,0 +1,167 @@
+<?php
+
+namespace console\controllers\actions\funcoesgerais;
+
+use Yii;
+use yii\base\Action;
+use common\models\Produto;
+use common\models\ProdutoFilial;
+use common\models\ValorProdutoFilial;
+use common\models\Filial;
+
+class BRCriarProdutosAction extends Action
+{
+    public function run(){
+        
+        echo "INÍCIO da rotina de atualizacao do preço: \n\n";
+        
+        $LinhasArray = Array();
+        $file = fopen("/var/tmp/br_produtos_ausentes_04-02-2020_completa -mari- atualizada.csv", 'r'); //Abre arquivo com preços para subir
+        while (($line = fgetcsv($file,null,';')) !== false)
+        {
+            $LinhasArray[] = $line; //Popula um array com os dados do arquivo, para facilitar o processamento
+        }
+        fclose($file);
+
+        //Verifica se já existe o arquivo de log da função, exclui caso exista
+        if (file_exists("/var/tmp/log_br_produtos_ausentes_04-02-2020_completa -mari- atualizada.csv")){
+            unlink("/var/tmp/log_br_produtos_ausentes_04-02-2020_completa -mari- atualizada.csv");
+        }
+
+        //Abre o arquivo de log pra ir logando a função
+        $arquivo_log = fopen("/var/tmp/log_br_produtos_ausentes_04-02-2020_completa -mari- atualizada.csv", "a");
+        //Escreve no log
+        //fwrite($arquivo_log, "coidgo_fabricante;NCM;codigo_global;valor;valor_compra;valor_venda;produto_filial_id;status_produto;status_estoque;status_preco\n");
+        
+        foreach ($LinhasArray as $i => &$linhaArray){ //Looper que vai percorrer o array com as imformações de preços a subir
+
+            //Coloca os dados da planilha de preços no log
+            fwrite($arquivo_log, "\n".'"'.$linhaArray[0].'";"'.$linhaArray[1].'";"'.$linhaArray[2].'";"'.$linhaArray[3].'";'.$linhaArray[4].';'.$linhaArray[5].';'.$linhaArray[6].';'.$linhaArray[7].';'.$linhaArray[8].";".$linhaArray[9].";".$linhaArray[10].";".$linhaArray[11].";".$linhaArray[12].";".$linhaArray[13].";".$linhaArray[14].";".$linhaArray[15].";".$linhaArray[16].";".$linhaArray[17].";".$linhaArray[18].";".$linhaArray[19].";");
+            
+            if ($i <= 0){ //Pula a primeira linha de preços, por se tratar dos títulos da planilha
+                fwrite($arquivo_log, "status");
+                continue;
+            }
+            
+            echo "\n".$i." - ".$linhaArray[1]." - ".$linhaArray[0]." - ".$linhaArray[7]." - ".$linhaArray[8]; //Exibe no console(Terminal) as informações dos preços durante o processamento
+            
+            $produto = Produto::find()  ->andWhere(['=','codigo_fabricante', $linhaArray[1]])
+                                        ->andWhere(['=','fabricante_id', 52])
+                                        ->one(); //Procura produto pelo código do fabricante "VA"
+            
+            if (!$produto){ //Se encontrar o produto, processa o preço
+                
+                $produto_novo = new Produto;
+                $produto_novo->codigo_global        = $linhaArray[0];
+                $produto_novo->codigo_fabricante    = $linhaArray[1].".B";
+                $produto_novo->nome                 = $linhaArray[2];
+                $produto_novo->peso                 = $linhaArray[3];
+                $produto_novo->altura               = $linhaArray[4];
+                $produto_novo->largura              = $linhaArray[5];
+                $produto_novo->profundidade         = $linhaArray[6];
+                $produto_novo->subcategoria_id      = $linhaArray[7];
+                $produto_novo->aplicacao            = $linhaArray[9];
+                $produto_novo->codigo_montadora     = $linhaArray[12];
+                $produto_novo->codigo_barras        = $linhaArray[18];
+                $produto_novo->descricao            = $linhaArray[2];
+                $produto_novo->fabricante_id        = 52;
+                $this->slugify($produto_novo);
+                //print_r($produto_novo); var_dump($produto_novo->save()); die;
+                if($produto_novo->save()){
+                    echo " - produto_criado";
+                    fwrite($arquivo_log, " - produto_criado");
+                }
+                else{
+                    echo " - produto_nao_criado";
+                    fwrite($arquivo_log, " - produto_nao_criado");
+                }
+                
+                   
+                $preco_venda = $linhaArray[19];
+                $preco_compra = $linhaArray[13];
+                
+                $quantidade = $linhaArray[14];
+                
+                if($quantidade == 0){
+                    $quantidade = 90;
+                    $preco_venda = $preco_venda * 1.1;
+                }
+                else{
+                    $quantidade = 781;
+                }
+                
+                if($linhaArray[6] == "0.00" || $linhaArray[6] == "0" || $linhaArray[6] == "0,00"){
+                    $quantidade = 0;
+                }
+
+                echo " - Quantidade: ".$quantidade;
+                $produto_filial_novo    = new ProdutoFilial;
+                $produto_filial_novo->produto_id                    = $produto_novo->id;
+                $produto_filial_novo->filial_id                     = 72;
+                $produto_filial_novo->quantidade                    = $quantidade;
+                $produto_filial_novo->envio                         = 1;
+                $produto_filial_novo->atualizar_preco_mercado_livre = true;
+                if($produto_filial_novo->save()){
+                    echo " - estoque_criado";
+                    fwrite($arquivo_log, " - estoque_criado");
+                }
+                else{
+                    print_r($produto_filial_novo);
+                    echo " - estoque_nao_criado";
+                    fwrite($arquivo_log, " - estoque_nao_criado");
+                }
+                
+                $valor_produto_filial = new ValorProdutoFilial;
+                $valor_produto_filial->produto_filial_id    = $produto_filial_novo->id;
+                $valor_produto_filial->valor                = $preco_venda;
+                $valor_produto_filial->valor_cnpj           = $preco_venda;
+                $valor_produto_filial->dt_inicio            = date("Y-m-d H:i:s");
+                $valor_produto_filial->promocao             = false;
+                $valor_produto_filial->valor_compra         = $preco_compra;
+                if($valor_produto_filial->save()){
+                    echo " - Preço criado";
+                    fwrite($arquivo_log, ' - Preço criado');
+                }
+                else{
+                    echo " - preco_nao_criado";
+                    fwrite($arquivo_log, ' - preco_nao_criado');
+                }
+            }
+            else{
+                echo " - Produto Já criado";
+                fwrite($arquivo_log, 'Produto Não encontrado');
+            }
+        }
+        
+        // Fecha o arquivo log
+        fclose($arquivo_log); 
+        
+        echo "\n\nFIM da rotina de atualizacao do preço!";
+    }
+    
+    private function slugify(&$produto_slugfy)
+    {
+        $text = $produto_slugfy->nome . ' ' . $produto_slugfy->codigo_global;
+        // replace non letter or digits by -
+        $text = preg_replace('~[^\pL\d]+~u', '-', $text);
+        // transliterate
+        $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
+        // remove unwanted characters
+        $text = preg_replace('~[^-\w]+~', '', $text);
+        // trim
+        $text = trim($text, '-');
+        // remove duplicate -
+        $text = preg_replace('~-+~', '-', $text);
+        // lowercase
+        $text = strtolower($text);
+        $produto_slugfy->slug = $text;
+    }
+}
+
+
+
+
+
+
+
+

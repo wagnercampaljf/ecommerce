@@ -1,0 +1,13 @@
+User-agent: *
+
+Disallow: /site/login
+Disallow: /comprador/create
+Disallow: /orcamento
+Disallow: /lojista/intro
+Disallow: /site/politicas
+Disallow: /carrinho
+Disallow: /lojista/web/site/login
+Disallow: /respostas
+Disallow: /checkout
+
+Sitemap: https://www.pecaagora.com/sitemaps/sitemap_index.xml

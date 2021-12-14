@@ -1,0 +1,41 @@
+
+
+
+
+
+<?php
+/**
+ * Created by PhpStorm.
+ * User: igorm
+ * Date: 27/06/2016
++ * Time: 18:54
+ */
+namespace console\controllers\actions\mercadolivre;
+
+use common\models\Produto;
+
+class AtualizarDescricaoAction extends Action
+{
+    public function run()
+    {
+        $produtos = Produto::find() ->orWhere(["like", "nome", "IVECO"])
+                                    ->orWhere(["like", "aplicacao", "IVECO"])
+                                    ->orWhere(["like", "aplicacao_complementar", "IVECO"])
+                                    ->orWhere(["like", "descricao", "IVECO"])
+                                    ->orderBy(["id"=>SORT_ASC])
+                                    //->limit(10)
+                                    ->all();
+        
+        foreach($produtos as $k => $produto){
+            echo "\n".$k." - ".$produto->id;
+
+	    if($k < 0){
+		echo " - Pular";
+		continue;
+	    }
+
+            $produto->atualizarMLDescricao();
+            //print_r($produto->atualizarMLNome());
+        }
+    }
+}

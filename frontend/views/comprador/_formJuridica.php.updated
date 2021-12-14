@@ -1,0 +1,72 @@
+<?php
+
+use yii\helpers\ArrayHelper;
+use yii\helpers\html;
+use yii\widgets\ActiveForm;
+use common\models\TipoEmpresa;
+
+
+/* @var $this yii\web\View */
+/* @var $comprador common\models\Comprador */
+/* @var $form yii\widgets\ActiveForm */
+/* @var $this yii\web\View */
+/* @var $model common\models\Empresa */
+/* @var $form yii\widgets\ActiveForm */
+
+$this->registerJs("jQuery('#reveal-password').change(function(){jQuery('#passwordFormInput').attr('type',this.checked?'text':'password');})");
+?>
+
+<div class="comprador-form comprador-form-juridica clearfix">
+    <h2 class="col-xs-12 col-sm-12 col-md-12 col-lg-12">Jurídica</h2>
+
+    <?php $form = ActiveForm::begin(); ?>
+    <!--    EMAIL E SENHA -->
+    <h3 class="col-xs-12 col-sm-12 col-md-12 col-lg-12">Dados login</h3>
+
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-4">
+            <?= $form->field($comprador,
+                'email')->input('email')->textInput(['maxlength' => 255])->label("Email / Login *")->hint("Ex: joao@yahoo.com.br") ?>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-3 col-md-3 col-lg-2">
+            <?= Html::checkbox('reveal-password', false, ['id' => 'reveal-password']) ?> <?= Html::label('Exibir Senha', 'reveal-password') ?>
+            <?= $form->field($comprador,
+                'password')->passwordInput(['maxlength' => 255, 'id' => 'passwordFormInput'])->hint('Senha de conter no minimo 6 caracteres de A-Za-z0-9')->label("Senha *") ?>
+        </div>
+    </div>
+
+    <!--    DADOS EMPRESA-->
+    <h3>Dados empresa</h3>
+
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-4 clearfix">
+            <?= $form->field($empresa, 'razao')->textInput(['maxlength' => 150])->label("Razão Social *") ?>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-4 clearfix ">
+            <?= $form->field($empresa, 'documento')->textInput(['maxlength' => 18])->label("CNPJ *") ?>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-4 clearfix">
+            * Ao clicar Cadastrar, você reconhece que concorda com os <a
+                href="<?= yii::$app->urlManager->baseUrl . "/site/politicas" ?>" target="_blank">Termos de Uso</a> e que
+            leu e entendeu as <a href="<?= yii::$app->urlManager->baseUrl . '/site/politicas' ?>" target="_blank">Políticas
+                de Privacidade</a> do Peça Agora. <br><br>
+        </div>
+    </div>
+    <div class="row">
+        <div class="form-group">
+            <?= Html::submitButton('Cadastrar', [
+                'class' => 'btn btn-success col-xs-4 col-sm-3 col-md-3 col-lg-2 clearfix',
+                'style' => 'margin: 15px;'
+            ]) ?>
+        </div>
+    </div>
+
+    <?php ActiveForm::end(); ?>
+</div>
+

@@ -1,0 +1,1006 @@
+<?php
+//7777
+
+namespace common\models;
+
+use Yii;
+use yii\helpers\ArrayHelper;
+use Livepixel\MercadoLivre\Meli;
+use console\controllers\actions\omie\Omie;
+use yii\base\ErrorException;
+use yii\helpers\Json;
+
+/**
+ * Este é o model para a tabela "pedido_mercado_livre".
+ *
+ * @property integer $id
+ * @property string $pedido_meli_id
+ * @property string $date_created
+ * @property string $date_closed
+ * @property string $last_updated
+ * @property string $total_amount
+ * @property string $paid_amount
+ * @property string $shipping_id
+ * @property string $status
+ * @property string $buyer_id
+ * @property string $buyer_nickname
+ * @property string $buyer_email
+ * @property string $buyer_first_name
+ * @property string $buyer_last_name
+ * @property string $buyer_doc_type
+ * @property string $buyer_doc_number
+ * @property string $shipping_base_cost
+ * @property string $shipping_status
+ * @property string $shipping_substatus
+ * @property string $shipping_date_created
+ * @property string $shipping_last_updated
+ * @property string $shipping_tracking_number
+ * @property string $shipping_tracking_method
+ * @property string $shipping_service_id
+ * @property string $receiver_id
+ * @property string $receiver_address_id
+ * @property string $receiver_address_line
+ * @property string $receiver_street_name
+ * @property string $receiver_street_number
+ * @property string $receiver_comment
+ * @property string $receiver_zip_code
+ * @property string $receiver_city_id
+ * @property string $receiver_city_name
+ * @property string $receiver_state_id
+ * @property string $receiver_state_name
+ * @property string $receiver_country_id
+ * @property string $receiver_country_name
+ * @property string $receiver_neighborhood_id
+ * @property string $receiver_neighborhood_name
+ * @property string $receiver_municipality_id
+ * @property string $receiver_municipality_name
+ * @property string $receiver_delivery_preference
+ * @property string $receiver_name
+ * @property string $receiver_phone
+ * @property string $shipping_option_id
+ * @property string $shipping_option_shipping_method_id
+ * @property string $shipping_option_name
+ * @property string $shipping_option_list_cost
+ * @property string $shipping_option_cost
+ * @property string $shipping_option_delivery_type
+ * @property string $user_id
+ * @property boolean $e_pedido_autorizado
+ * @property boolean $e_pedido_cancelado
+ * @property boolean $e_nota_fiscal_anexada
+ * @property boolean $e_pedido_faturado
+ * @property string $email_texto
+ * @property string $email_enderecos
+ * @property string $pack_id
+ * @property string $email_assunto
+ * @property boolean $e_xml_subido
+ * @property boolean $e_etiqueta_impressa
+ * @property string $data_hora_autorizacao
+ * @property string $data_hora_cancelamento
+ * @property string $data_hora_envio
+ * @property integer $autorizado_por
+ * @property integer $cancelado_por
+ * @property integer $enviado_por
+ * @property integer $codigo_pedido_omie
+ * @property integer $nota_fiscal_compra_id
+ * @property boolean $e_pre_nota_impressa
+ * @property integer $quantidade_impressoes_pre_nota
+ *
+ * @property PedidoMercadoLivrePagamento[] $pedidoMercadoLivrePagamentos
+ * @property PedidoMercadoLivreProduto[] $pedidoMercadoLivreProdutos
+ *
+ * @author Unknown 15/06/2020
+ */
+class PedidoMercadoLivre extends \yii\db\ActiveRecord
+{
+
+    const APP_ID = '3029992417140266';
+    const SECRET_KEY = '1DjEfVPwkjOmqowN1ALujTJpgQh5DGdh';
+
+    /**
+     * @inheritdoc
+     * @author Unknown 15/06/2020
+     */
+    public static function tableName()
+    {
+        return 'pedido_mercado_livre';
+    }
+
+    /**
+     * @inheritdoc
+     * @author Unknown 15/06/2020
+     */
+    public function rules()
+    {
+        return [
+            [['pedido_meli_id', 'total_amount'], 'required'],
+            [['date_created', 'date_closed', 'last_updated', 'shipping_date_created', 'shipping_last_updated'], 'safe'],
+            [['total_amount', 'paid_amount', 'shipping_base_cost', 'shipping_option_list_cost', 'shipping_option_cost'], 'number'],
+            [['e_pedido_autorizado', 'e_pedido_cancelado', 'e_nota_fiscal_anexada', 'e_pedido_faturado', 'e_xml_subido', 'e_etiqueta_impressa'], 'boolean'],
+            [['email_texto', 'email_assunto'], 'string'],
+            [['comentario'], 'string'],
+            [['pedido_meli_id', 'shipping_id', 'status', 'buyer_id', 'buyer_doc_type', 'shipping_service_id', 'receiver_id', 'receiver_address_id', 'receiver_street_number', 'receiver_zip_code', 'receiver_country_id', 'receiver_neighborhood_id', 'receiver_municipality_id', 'shipping_option_id', 'shipping_option_name', 'shipping_option_delivery_type', 'user_id'], 'string', 'max' => 20],
+            [['buyer_nickname', 'buyer_email', 'buyer_first_name', 'buyer_last_name', 'receiver_address_line', 'receiver_street_name'], 'string', 'max' => 200],
+            [['buyer_doc_number', 'shipping_tracking_number', 'receiver_state_name', 'receiver_country_name'], 'string', 'max' => 30],
+            [['shipping_status'], 'string', 'max' => 40],
+            [['shipping_substatus', 'receiver_comment', 'receiver_neighborhood_name'], 'string', 'max' => 100],
+            [['shipping_tracking_method', 'receiver_city_id', 'receiver_state_id', 'receiver_municipality_name', 'receiver_delivery_preference'], 'string', 'max' => 50],
+            [['receiver_city_name', 'receiver_name', 'pack_id'], 'string', 'max' => 60],
+            [['receiver_phone'], 'string', 'max' => 15],
+            [['shipping_option_shipping_method_id'], 'string', 'max' => 10],
+            [['email_enderecos'], 'string', 'max' => 400]
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     * @author Unknown 15/06/2020
+     */
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'pedido_meli_id' => 'Pedido Meli ID',
+            'date_created' => 'Date Created',
+            'date_closed' => 'Date Closed',
+            'last_updated' => 'Last Updated',
+            'total_amount' => 'Total Amount',
+            'paid_amount' => 'Paid Amount',
+            'shipping_id' => 'Shipping ID',
+            'status' => 'Status',
+            'buyer_id' => 'Buyer ID',
+            'buyer_nickname' => 'Buyer Nickname',
+            'buyer_email' => 'Buyer Email',
+            'buyer_first_name' => 'Nome',
+            'buyer_last_name' => 'Sobrenome',
+            'buyer_doc_type' => 'Tipo Doc',
+            'buyer_doc_number' => 'Documento',
+            'shipping_base_cost' => 'Shipping Base Cost',
+            'shipping_status' => 'Status Envio',
+            'shipping_substatus' => 'Shipping Substatus',
+            'shipping_date_created' => 'Shipping Date Created',
+            'shipping_last_updated' => 'Shipping Last Updated',
+            'shipping_tracking_number' => 'Shipping Tracking Number',
+            'shipping_tracking_method' => 'Shipping Tracking Method',
+            'shipping_service_id' => 'Shipping Service ID',
+            'receiver_id' => 'Receiver ID',
+            'receiver_address_id' => 'Receiver Address ID',
+            'receiver_address_line' => 'Receiver Address Line',
+            'receiver_street_name' => 'Receiver Street Name',
+            'receiver_street_number' => 'Receiver Street Number',
+            'receiver_comment' => 'Receiver Comment',
+            'receiver_zip_code' => 'Receiver Zip Code',
+            'receiver_city_id' => 'Receiver City ID',
+            'receiver_city_name' => 'Receiver City Name',
+            'receiver_state_id' => 'Receiver State ID',
+            'receiver_state_name' => 'Receiver State Name',
+            'receiver_country_id' => 'Receiver Country ID',
+            'receiver_country_name' => 'Receiver Country Name',
+            'receiver_neighborhood_id' => 'Receiver Neighborhood ID',
+            'receiver_neighborhood_name' => 'Receiver Neighborhood Name',
+            'receiver_municipality_id' => 'Receiver Municipality ID',
+            'receiver_municipality_name' => 'Receiver Municipality Name',
+            'receiver_delivery_preference' => 'Receiver Delivery Preference',
+            'receiver_name' => 'Receiver Name',
+            'receiver_phone' => 'Receiver Phone',
+            'shipping_option_id' => 'Shipping Option ID',
+            'shipping_option_shipping_method_id' => 'Shipping Option Shipping Method ID',
+            'shipping_option_name' => 'Shipping Option Name',
+            'shipping_option_list_cost' => 'Shipping Option List Cost',
+            'shipping_option_cost' => 'Shipping Option Cost',
+            'shipping_option_delivery_type' => 'Shipping Option Delivery Type',
+            'user_id' => 'User ID',
+            'e_pedido_autorizado' => 'E Pedido Autorizado',
+            'e_pedido_cancelado' => 'E Pedido Cancelado',
+            'e_nota_fiscal_anexada' => 'E Nota Fiscal Anexada',
+            'e_pedido_faturado' => 'E Pedido Faturado',
+            'email_texto' => 'Email Texto',
+            'email_enderecos' => 'Email Enderecos',
+            'comentario' => 'Comentario',
+            'pack_id' => 'Pack ID',
+            'e_pedido_cancelado' => 'E pedido cancelado',
+            'email_assunto' => 'Email Assunto',
+            'e_xml_subido' => "E XML Subido",
+            'e_etiqueta_impressa' => "E etiqueta impressa",
+	    'shipping_id'	=> 'Etiqueta',
+        ];
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     * @author Unknown 15/06/2020
+     */
+    public function getPedidoMercadoLivrePagamentos()
+    {
+        return $this->hasMany(PedidoMercadoLivrePagamento::className(), ['pedido_mercado_livre_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     * @author Unknown 15/06/2020
+     */
+    public function getPedidoMercadoLivreProdutos()
+    {
+        return $this->hasMany(PedidoMercadoLivreProduto::className(), ['pedido_mercado_livre_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     * @author Unknown 15/06/2020
+     */
+    public static function find()
+    {
+        return new PedidoMercadoLivreQuery(get_called_class());
+    }
+
+    public static function baixarPedidoML($order, $e_html = false)
+    {
+
+        $status_retorno = "";
+
+        $meli = new Meli(static::APP_ID, static::SECRET_KEY);
+        
+        $contas_ml  = [
+            [
+                "descricao"             => "Conta Principal São Paulo",
+                "nome_arquivo"          => "conta_principal_sao_paulo",
+                "filial_id_referencia"  => 72,
+            ],
+            [
+                "descricao"             => "Conta Duplicada São Paulo",
+                "nome_arquivo"          => "conta_duplicada_sao_paulo",
+                "filial_id_referencia"  => 98,
+            ],
+            [
+                "descricao"             => "Conta Principal Minas Gerais",
+                "nome_arquivo"          => "conta_principal_minas_gerais",
+                "filial_id_referencia"  => 94,
+            ]
+        ];
+        
+        foreach($contas_ml as $conta_ml){
+            $filial = Filial::find()->andWhere(['=', 'id', $conta_ml["filial_id_referencia"]])->one();
+            $user = $meli->refreshAccessToken($filial->refresh_token_meli);
+            $response = ArrayHelper::getValue($user, 'body');
+            $meliAccessToken = $response->access_token;
+            
+            $user_id_array  = explode("-", $filial->refresh_token_meli);
+            $user_id        = $user_id_array[2];
+            
+            $url_order = "/orders/" . $order;
+            
+            $response_order = $meli->get($url_order . "?access_token=" . $meliAccessToken);
+            
+            if ($response_order["httpCode"] < 300) {
+                $billing_info   = $meli->get($url_order . "/billing_info;?access_token=" . $meliAccessToken);
+                
+                $status_retorno .= self::criarAlterarPedidoMercadoLivre($response_order, $billing_info, $e_html);
+                
+                $envio_dados = $meli->get("/shipments/" . ArrayHelper::getValue($response_order, 'body.shipping.id') . "?access_token=" . $meliAccessToken);
+
+                if ($envio_dados['httpCode'] >= 300) {
+                    $status_retorno = ($e_html) ? str_replace("\n", "<br>", $status_retorno) : $status_retorno;
+                    return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Sem informações de envio</span>" : "\nSem informa    es de envio";
+                } else {
+                    //print_r($envio_dados);
+                    $status_retorno .= self::criarAlterarPedidoMercadoLivreEnvio($response_order, $billing_info, $envio_dados);
+                }
+
+                $status_retorno .= self::criarPedidoOmie($user_id, $response_order, $envio_dados, $billing_info, $e_html, $order);
+                $status_retorno = ($e_html) ? str_replace("\n", "<br>", $status_retorno) : $status_retorno;
+                return $status_retorno;
+            }
+        }
+        /*die;
+
+        $filial = Filial::find()->andWhere(['=', 'id', 72])->one();
+        $user = $meli->refreshAccessToken($filial->refresh_token_meli);
+        $response = ArrayHelper::getValue($user, 'body');
+        $meliAccessToken = $response->access_token;
+        //echo $meliAccessToken;die;
+        $user_id = "193724256";
+
+        $url_order = "/orders/" . $order;
+
+        $response_order = $meli->get($url_order . "?access_token=" . $meliAccessToken);
+	//print_r($response_order);
+
+        if ($response_order["httpCode"] >= 300) {
+            $filial_conta_duplicada = Filial::find()->andWhere(['=', 'id', 98])->one();
+            $user_conta_duplicada = $meli->refreshAccessToken($filial_conta_duplicada->refresh_token_meli);
+            $response_conta_duplicada = ArrayHelper::getValue($user_conta_duplicada, 'body');
+            $meliAccessToken = $response_conta_duplicada->access_token;
+            //echo $meliAccessToken;die;            
+            $response_order = $meli->get("/orders/" . $order . "?access_token=" . $meliAccessToken);
+
+            if ($response_order["httpCode"] >= 300) {
+                $status_retorno = ($e_html) ? str_replace("\n", "<br>", $status_retorno) : $status_retorno;
+                return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>VENDA NÃO ENCONTRADA EM NENHUMA CONTA DO MERCADO LIVRE</span>" : "\nVENDA NÃO ENCONTRADA EM NENHUMA CONTA DO MERCADO LIVRE";
+            }
+
+            $user_id = "435343067";
+        }
+
+        $billing_info   = $meli->get($url_order . "/billing_info;?access_token=" . $meliAccessToken);
+
+        $status_retorno .= self::criarAlterarPedidoMercadoLivre($response_order, $billing_info, $e_html);
+
+        //	$url_shipping = "/shipments/".ArrayHelper::getValue($response_order, 'body.shipping.id')."?access_token=" . $meliAccessToken;
+        $envio_dados = $meli->get("/shipments/" . ArrayHelper::getValue($response_order, 'body.shipping.id') . "?access_token=" . $meliAccessToken);
+        //print_r($envio_dados);
+//echo "(000)";
+        if ($envio_dados['httpCode'] >= 300) {
+            $status_retorno = ($e_html) ? str_replace("\n", "<br>", $status_retorno) : $status_retorno;
+            return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Sem informações de envio</span>" : "\nSem informa    es de envio";
+        } else {
+	    //print_r($envio_dados);
+            $status_retorno .= self::criarAlterarPedidoMercadoLivreEnvio($response_order, $billing_info, $envio_dados);
+        }
+echo "(111)";
+        $status_retorno .= self::criarPedidoOmie($user_id, $response_order, $envio_dados, $billing_info, $e_html, $order);
+echo "(222)";
+        $status_retorno = ($e_html) ? str_replace("\n", "<br>", $status_retorno) : $status_retorno;
+        return $status_retorno;*/
+    }
+
+    public static function criarPedidoOmie($user_id, $response_order, $envio_dados, $billing_info, $e_html, $order)
+    {
+
+        $status_retorno = "";
+
+        $omie = new Omie(1, 1);
+
+        $app_key                    = "";
+        $app_secret                 = "";
+        $codigo_cenario_impostos    = "";
+        $codigo_transportadora      = 0;
+        $codVend                    = 0;
+        $codigo_conta_corrente      = 0;
+
+        switch ($user_id) {
+            //Conta principal - SP
+            case "193724256":
+                $app_key                    = "468080198586";
+                $app_secret                 = "7b3fb2b3bae35eca3b051b825b6d9f43";
+                $codigo_cenario_impostos    = "2602379535";
+                $codigo_transportadora      = "505552563";
+                $codVend                    = 500726231;
+                $codigo_conta_corrente      = 502875713;
+                break;
+            //Conta duplicada - SP
+            case "435343067":
+                $app_key    = "1017311982687";
+                $app_secret = "78ba33370fac6178da52d42240591291";
+                $codigo_cenario_impostos    = "1128355333";
+                $codigo_transportadora      = "1018250911";
+                $codVend                    = 1018256043;
+                $codigo_conta_corrente      = 1018255531;
+                break;
+            //Conta principal - MG
+            case "195972862":
+                /*$app_key    = "469728530271";
+                $app_secret = "6b63421c9bb3a124e012a6bb75ef4ace";
+                $codigo_cenario_impostos    = "503038132";
+                $codigo_transportadora      = "532435547";
+                $codVend                    = 738093586;
+                $codigo_conta_corrente      = 508719095;
+                break;*/
+		$app_key    = "1758907907757";
+                $app_secret = "0a69c9b49e5a188e5f43d5505f2752bc";
+                $codigo_cenario_impostos    = "503038132";
+                $codigo_transportadora      = "532435547";
+                $codVend                    = 738093586;
+                $codigo_conta_corrente      = 508719095;
+                break;
+
+        }
+
+        $body = [
+            "call" => "ListarClientes",
+            "app_key" => $app_key,
+            "app_secret" => $app_secret,
+            "param" => [
+                "pagina" => 1,
+                "registros_por_pagina" => 1,
+                "apenas_importado_api" => "N",
+                "clientesFiltro" => [
+                    "cnpj_cpf" => $billing_info["body"]->billing_info->doc_number,
+                ]
+            ]
+        ];
+echo "(444)";
+        $response_omie = $omie->consulta_cliente("api/v1/geral/clientes/?JSON=", $body);
+        //print_r($billing_info["body"]->billing_info->doc_number);print_r($response_omie); die;
+echo "(555)";
+        $cliente_codigo_integracao  = "";
+        $codigo_cliente             = "";
+
+        if (ArrayHelper::getValue($response_omie, 'httpCode') == 200) {
+            $status_retorno = "\nCliente já cadastrado";
+
+            foreach ($response_omie["body"]["clientes_cadastro"] as $i => $cliente) {
+                $cliente_codigo_integracao = $cliente["codigo_cliente_integracao"];
+                $codigo_cliente            = $cliente["codigo_cliente_omie"];
+            }
+        } else {
+
+            //return $status_retorno = "\nNovo cliente";
+            //Adicionar novo CLIENTE      
+            $cep = substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.zip_code'), 0, 10);
+	    echo "\n(";print_r($cep);echo ")\n";
+            $endereco = PedidoMercadoLivre::GetEndereco($cep);
+            $endereco = json_decode($endereco);
+	    print_r($endereco);
+
+            $body = [
+                "call" => "IncluirCliente",
+                "app_key" => $app_key,
+                "app_secret" => $app_secret,
+                "param" => [
+                    "codigo_cliente_integracao" => substr(ArrayHelper::getValue($response_order, 'body.buyer.id'), 0, 20)."ML",
+                    "razao_social"              => str_replace(" ", "%20", substr(ArrayHelper::getValue($response_order, 'body.buyer.first_name') . " " . ArrayHelper::getValue($response_order, 'body.buyer.last_name'), 0, 59)),
+                    //"cnpj_cpf"                  => substr(ArrayHelper::getValue($response_order, 'body.buyer.billing_info.doc_number'),0,20),
+                    "cnpj_cpf"                  => substr($billing_info["body"]->billing_info->doc_number, 0, 20),
+                    "nome_fantasia"             => str_replace(" ", "%20", substr(ArrayHelper::getValue($response_order, 'body.buyer.first_name') . " " . ArrayHelper::getValue($response_order, 'body.buyer.last_name'), 0, 100)),
+                    //"telefone1_ddd"             => substr(ArrayHelper::getValue($response_order, 'body.buyer.phone.area_code'),0,5),
+                    //"telefone1_numero"          => substr(ArrayHelper::getValue($response_order, 'body.buyer.phone.number'),0,15),
+                    "telefone1_ddd"             => substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.receiver_phone'), 0, 5),
+                    "telefone1_numero"          => substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.receiver_phone'), 0, 15),
+                    "contato"                   => str_replace(" ", "%20", substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.receiver_name'), 0, 100)),
+                    "endereco"                  => str_replace(" ", "%20", substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.street_name'), 0, 59)),
+                    "endereco_numero"           => substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.street_number'), 0, 10),
+                    "bairro"                    => utf8_encode(str_replace(" ", "%20", substr(((ArrayHelper::getValue($envio_dados, 'body.receiver_address.neighborhood.name') == "") ? "Centro" : ArrayHelper::getValue($envio_dados, 'body.receiver_address.neighborhood.name')), 0, 30))),
+                    "complemento"               => utf8_encode(substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.comment'), 0, 39)),
+                    "estado"                    => str_replace(" ", "%20", substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.state.id'), -2)),
+                    "cidade"                    => $endereco->ibge,//"3137205",//$endereco->ibge,
+                    "cep"                       => substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.zip_code'), 0, 10),
+                    "email"                     => "cliente.pecaagora@gmail.com", //ArrayHelper::getValue($response_order, 'body.buyer.email'),
+                ]
+            ];
+
+            $response_omie = $omie->cria_cliente("api/v1/geral/clientes/?JSON=", $body);
+            //echo "<br><br>"; print_r($response_omie); print_r($body); die;
+            if (ArrayHelper::getValue($response_omie, 'httpCode') == 200) {
+                $status_retorno .= "\nCliente Criado";
+                $cliente_codigo_integracao = substr(ArrayHelper::getValue($response_order, 'body.buyer.id'), 0, 20)."ML";
+            } else {
+                //print_r($response_omie);
+		return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Cliente não criado (" . $response_omie["body"]["faultstring"] . ")</span>" : "\nCliente não criado (" . $response_omie["body"]["faultstring"] . ")";
+            }
+        }
+
+        //Verificar se existe pedido
+        $body = [
+            "call" => "ConsultarPedido",
+            "app_key" => $app_key,
+            "app_secret" => $app_secret,
+            "param" => [
+                "codigo_pedido_integracao" => ArrayHelper::getValue($response_order, 'body.id'),
+            ]
+        ];
+        $response_omie = $omie->consulta_pedido("api/v1/geral/pedidos/?JSON=", $body);
+        //print_r($response_omie);
+
+        if (ArrayHelper::getValue($response_omie, 'httpCode') == 200) {
+            $status_retorno .= "\nPedido já cadastrado no Omie";
+
+    	    $pedido_mercado_livre = PedidoMercadoLivre::find()->andWhere(["=", "pedido_meli_id", $order])->one();
+            if($pedido_mercado_livre){
+                $pedido_mercado_livre->codigo_pedido_omie = ArrayHelper::getValue($response_omie, 'body.pedido_venda_produto.cabecalho.codigo_pedido');
+                if($pedido_mercado_livre->save()){
+                    $status_retorno .= "\nCodigo Omie adicionado no pedido do ML";
+                }
+                else{
+                    $status_retorno .= "\nCodigo Omie não adicionado no pedido do ML";
+                }
+            }
+        } else {
+            //Adicionar novo PEDIDO
+            //echo "=====>>".ArrayHelper::getValue($response_order, 'body.order_items.0.item.id')."<<====="; die;
+            $produtoML = ProdutoFilial::find()->andWhere(['=', 'meli_id', ArrayHelper::getValue($response_order, 'body.order_items.0.item.id')])->one();
+            if (!$produtoML) {
+                $produtoML = ProdutoFilial::find()->andWhere(['=', 'meli_id_sem_juros', ArrayHelper::getValue($response_order, 'body.order_items.0.item.id')])->one();
+
+                if (!$produtoML) {
+                    $produtoML = ProdutoFilial::find()->andWhere(['=', 'meli_id_full', ArrayHelper::getValue($response_order, 'body.order_items.0.item.id')])->one();
+
+			if (!$produtoML) {
+                	    $produtoML = ProdutoFilial::find()->andWhere(['=', 'meli_id_flex', ArrayHelper::getValue($response_order, 'body.order_items.0.item.id')])->one();
+                	}
+                }
+            }
+            //echo " <==> Produto_filial: ";var_dump(ArrayHelper::getValue($response_order, 'body.order_items.0.item.id'));die;
+
+            if (!$produtoML) {
+                return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Produto sem vínculo ( MELI_ID: " . ArrayHelper::getValue($response_order, 'body.order_items.0.item.id') . " )</span>" : "\nProduto sem vínculo ( MELI_ID: " . ArrayHelper::getValue($response_order, 'body.order_items.0.item.id') . " )";
+            }
+
+            //print_r($produtoML); die;
+            echo "<pre>"; print_r($produtoML->atualizarMLPreco()); echo "</pre>";
+
+            $codigo_pa      = "PA" . $produtoML->produto_id;
+            $codigo_global  = $produtoML->produto->codigo_global;
+            $multiplicador  = ((!is_null($produtoML->produto->multiplicador)) ? $produtoML->produto->multiplicador : 1);
+            $quantidade     = ArrayHelper::getValue($response_order, 'body.order_items.0.quantity') * $multiplicador;
+            $valor_unitario = ArrayHelper::getValue($response_order, 'body.order_items.0.unit_price') / $multiplicador;
+
+            //echo "<br><br>".$codigo_global;
+
+            if (!(strpos($codigo_global, "CX.") === false) || !(strpos($codigo_global, "P.") === false)) {
+
+                $codigo_global_limpo = str_replace("CX.", "", $codigo_global);
+                $codigo_global_limpo = str_replace("P.", "", $codigo_global_limpo);
+                //echo "<br><br>"; var_dump($codigo_global_limpo);
+
+                if (!(strpos($codigo_global, "-") === false)) {
+
+                    $codigo_global_limpo_sem_unidades   = explode("-", $codigo_global_limpo);
+                    $codigo_global_limpo                = $codigo_global_limpo_sem_unidades[0];
+                }
+
+                //print_r($codigo_global); die;
+                $produto_unitario   = Produto::find()->andWhere(['=', 'codigo_global', $codigo_global_limpo])->one();
+
+                if (!$produto_unitario) {
+                    return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Sem produto unitário cadastrado</span>" : "Sem produto unitário cadastrado";
+                }
+
+                $codigo_pa          = "PA" . $produto_unitario->id;
+            }
+
+            //$cfop   = "6.102";
+            $cfop   = "6.108";
+            $csosn  = "102";
+            if (substr(ArrayHelper::getValue($envio_dados, 'body.receiver_address.state.id'), -2) == "SP") {
+                $cfop   = "5.405";
+                $csosn  = "500";
+            }
+
+            $imposto = array();
+            //echo "111<pre>"; print_r($produtoML); echo "</pre>"; die;
+            $imposto = self::gerarImposto($csosn, $produtoML->produto);
+
+
+            //DESCONTOS
+            $tarifas        = 0.0;
+            $frete          = 0.0;
+            $valor          = 0.0;
+            //$valor_unitario = 0.0;
+            foreach (ArrayHelper::getValue($response_order, 'body.order_items') as $k => $produto) {
+
+                $tarifas        = ArrayHelper::getValue($produto, 'sale_fee') * $quantidade;
+                $frete          = ArrayHelper::getValue($envio_dados, 'body.shipping_option.cost') - ArrayHelper::getValue($envio_dados, 'body.shipping_option.list_cost');
+                $frete          = ($frete < 0) ? $frete * (-1) : $frete;
+                $valor          = ArrayHelper::getValue($produto, 'full_unit_price') * $quantidade - ($tarifas + $frete);
+                $valor_unitario  = $valor / $quantidade;
+            }
+
+            $body = [
+                "call" => "IncluirPedido",
+                "app_key" => $app_key,
+                "app_secret" => $app_secret,
+                "param" => [
+                    "cabecalho" => [
+                        "bloqueado"                 => "N",
+                        "codigo_cliente"            => $codigo_cliente, //ArrayHelper::getValue($response_omie, 'body.codigo_cliente_omie'),
+                        "codigo_cenario_impostos"   => $codigo_cenario_impostos,
+                        "codigo_cliente_integracao" => $cliente_codigo_integracao, //ArrayHelper::getValue($response_order, 'body.buyer.id'),
+                        "codigo_pedido_integracao"  => ArrayHelper::getValue($response_order, 'body.id'),
+                        "etapa"                     => "10",
+                        "data_previsao"             => substr(ArrayHelper::getValue($response_order, 'body.date_created'), 8, 2) . '/' . substr(ArrayHelper::getValue($response_order, 'body.date_created'), 5, 2) . '/' . substr(ArrayHelper::getValue($response_order, 'body.date_created'), 0, 4),
+                        "quantidade_itens"          => ArrayHelper::getValue($response_order, 'body.order_items.0.quantity'),
+                    ],
+                    "det" => [
+                        "ide" => [
+                            "codigo_item_integracao"    => substr($produtoML->produto->codigo_global, 0, 20),
+                            "regra_impostos"            => 0,
+                            "simples_nacional"           => "",
+                        ],
+                        "imposto" => $imposto,
+
+                        "produto" => [
+                            "codigo_produto_integracao" => $codigo_pa, //"PA".$produtoML->produto->id,
+                            "cfop"                      => $cfop,
+                            "quantidade"                => $quantidade, //ArrayHelper::getValue($response_order, 'body.order_items.0.quantity'),
+                            "valor_unitario"            => $valor_unitario, //ArrayHelper::getValue($response_order, 'body.order_items.0.unit_price'),
+                        ],
+                    ],
+                    "frete" => [
+                        "codigo_transportadora" => $codigo_transportadora,
+                        "modalidade"            => 0,
+                        "quantidade_volumes"    => 1,
+                        "especie_volumes"       => "CAIXA",
+                        "outras_despesas"       => $tarifas,
+                        "valor_frete"           => $frete,
+                    ],
+                    "informacoes_adicionais"    => [
+                        "numero_contrato"           => ArrayHelper::getValue($response_order, 'body.payments.0.id'),
+                        "numero_pedido_cliente"     => ArrayHelper::getValue($response_order, 'body.id'),
+                        "consumidor_final"          => "S",
+                        "codigo_categoria"          => "1.01.03",
+                        "codVend"                   => $codVend,
+                        "codigo_conta_corrente"     => $codigo_conta_corrente,
+                    ],
+                ],
+            ];
+
+            //echo " <==> Body Pedido: <pre>";print_r($body); echo "</pre>";
+            $response_omie = $omie->cria_pedido("api/v1/produtos/pedido/?JSON=", $body);
+            if (ArrayHelper::getValue($response_omie, 'httpCode') == 200) {
+                $status_retorno .= "\nPedido criado";
+
+		$pedido_mercado_livre = PedidoMercadoLivre::find()->andWhere(["=", "pedido_meli_id", $order])->one();
+                if($pedido_mercado_livre){
+                    $pedido_mercado_livre->codigo_pedido_omie = ArrayHelper::getValue($response_omie, 'body.codigo_pedido');
+                    if($pedido_mercado_livre->save()){
+                        $status_retorno .= "\nCodigo Omie adicionado no pedido do ML";
+                    }
+                    else{
+                        $status_retorno .= "\nCodigo Omie não adicionado no pedido do ML";
+                    }
+                }
+            } else {
+                return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Pedido não criado (" . $response_omie["body"]["faultstring"] . ")</span>" : "Pedido não criado (" . $response_omie["body"]["faultstring"] . ")";
+            }
+        }
+
+        return $status_retorno;
+    }
+
+
+    public static function gerarImposto($csosn, $produto)
+    {
+
+        $imposto = [
+            "ipi" => [
+                "cod_sit_trib_ipi"  => 99,
+                "enquadramento_ipi" => 999,
+                "tipo_calculo_ipi"  => "B",
+            ],
+            "pis_padrao" => [
+                "cod_sit_trib_pis"  => 49,
+                "tipo_calculo_pis"  => "B",
+            ],
+            "cofins_padrao" => [
+                "cod_sit_trib_cofins"   => 49,
+                "tipo_calculo_cofins"   => "B",
+            ],
+            "icms_sn" => [
+                "cod_sit_trib_icms_sn" => $csosn,
+            ],
+        ];
+
+        $codigos = [
+            //Anexo 1
+            40161010,
+            40169990,
+            6813,
+            70071100,
+            70072100,
+            70091000,
+            73201000,
+            83012000,
+            83023000,
+            84073390,
+            84073490,
+            840820,
+            840991,
+            840999,
+            841330,
+            84139100,
+            84148021,
+            84148022,
+            841520,
+            84212300,
+            84213100,
+            84314100,
+            84314200,
+            84339090,
+            848310,
+            84832000,
+            848330,
+            848340,
+            848350,
+            850520,
+            85071000,
+            8511,
+            851220,
+            85123000,
+            851240,
+            85129000,
+            85272,
+            85365090,
+            853910,
+            85443000,
+            870600,
+            8707,
+            8708,
+            90292010,
+            90299010,
+            90303921,
+            90318040,
+            9032892,
+            91040000,
+            94012000,
+
+            //Anexo 2
+            8429,
+            843320,
+            84333000,
+            84334000,
+            84335,
+            8701,
+            8702,
+            8703,
+            8704,
+            8705,
+            8706,
+            8431,
+            84089090,
+            84122110,
+            84122190,
+            84123110,
+            87012000,
+            8702,
+            8704,
+            84136019,
+            84148019,
+            84149039,
+            84329000,
+            84324000,
+            84328000,
+            84811000,
+            84812090,
+            84818092,
+            8483601,
+            85011019
+        ];
+
+        //echo "<pre>"; print_r($imposto); echo "</pre>"; die;
+
+        foreach ($codigos as $k => $codigo) {
+
+            //echo "<br>".$k." - ".$codigo;
+
+            $quantidade_caracteres = strlen($codigo);
+            $ncm = str_replace('.', '', $produto->codigo_montadora);
+            $sub_ncm = substr($ncm, 0, $quantidade_caracteres);
+
+            //echo " - ".$quantidade_caracteres." - ".$sub_ncm;
+
+            if ($sub_ncm == $codigo) {
+                $imposto["cofins_padrao"]["cod_sit_trib_cofins"] = "04";
+                $imposto["cofins_padrao"]["tipo_calculo_cofins"] = "";
+
+                $imposto["pis_padrao"]["cod_sit_trib_pis"] = "04";
+                $imposto["pis_padrao"]["tipo_calculo_pis"] = "";
+
+                break;
+            }
+        }
+
+        //echo "<pre>"; print_r($imposto); echo "</pre>";
+
+    }
+
+
+    public static function criarAlterarPedidoMercadoLivre($order, $billing_info, $e_html)
+    {
+
+        //echo "<pre>"; print_r($order); echo "</pre>"; die;
+        //echo "<pre>"; print_r($shipping); echo "</pre>";die;
+
+        $status_retorno = "";
+
+        $pedido_mercado_livre = PedidoMercadoLivre::find()->andwhere(['=', 'pedido_meli_id', ArrayHelper::getValue($order, 'body.id')])->one();
+        if ($pedido_mercado_livre) {
+            $pedido_mercado_livre->pedido_meli_id       = (string) ArrayHelper::getValue($order, 'body.id');
+            $pedido_mercado_livre->total_amount         = ArrayHelper::getValue($order, 'body.total_amount');
+            $pedido_mercado_livre->date_created         = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.date_created'), 0, 19));
+            $pedido_mercado_livre->date_closed          = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.date_closed'), 0, 19));
+            $pedido_mercado_livre->last_updated         = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.last_updated'), 0, 19));
+            $pedido_mercado_livre->paid_amount          = (string) ArrayHelper::getValue($order, 'body.paid_amount');
+            $pedido_mercado_livre->shipping_id          = (string) ArrayHelper::getValue($order, 'body.shipping.id');
+            $pedido_mercado_livre->status               = (string) ArrayHelper::getValue($order, 'body.status');
+            $pedido_mercado_livre->buyer_id             = (string) ArrayHelper::getValue($order, 'body.buyer.id');
+            $pedido_mercado_livre->buyer_nickname       = (string) (isset($order["body"]->buyer->nickname)) ? ArrayHelper::getValue($order, 'body.buyer.nickname') : "";
+            $pedido_mercado_livre->buyer_email          = (string) (isset($order["body"]->buyer->email)) ? ArrayHelper::getValue($order, 'body.buyer.email') : "";
+            $pedido_mercado_livre->buyer_first_name     = (string) (isset($order["body"]->buyer->first_name)) ? ArrayHelper::getValue($order, 'body.buyer.first_name') : "";
+            $pedido_mercado_livre->buyer_last_name      = (string) (isset($order["body"]->buyer->last_name)) ? ArrayHelper::getValue($order, 'body.buyer.last_name') : "";
+            $pedido_mercado_livre->buyer_doc_type       = (string) (isset($billing_info["body"]->billing_info->doc_type)) ? $billing_info["body"]->billing_info->doc_type : "";
+            $pedido_mercado_livre->buyer_doc_number     = (string) (isset($billing_info["body"]->billing_info->doc_number)) ? $billing_info["body"]->billing_info->doc_number : "";
+            $pedido_mercado_livre->user_id              = (string) ArrayHelper::getValue($order, 'body.seller.id');
+            $pedido_mercado_livre->pack_id              = (string) ArrayHelper::getValue($order, 'body.pack_id');
+
+            if (is_null($pedido_mercado_livre->email_enderecos)) {
+                //$pedido_mercado_livre->email_enderecos = "entregasp.pecaagora@gmail.com; notafiscal.pecaagora@gmail.com; compras.pecaagora@gmail.com; entregasp.pecaagora@gmail.com";
+		$pedido_mercado_livre->email_enderecos = "notafiscal.pecaagora@gmail.com; compras.pecaagora@gmail.com";
+            }
+
+            if ($pedido_mercado_livre->save()) {
+                $status_retorno .= "\nPedido alterado";
+            } else {
+                $status_retorno .=  "\nPedido não alterado";
+            }
+        } else {
+            //echo "<pre>"; print_r($order); echo "</pre>"; die;
+            $pedido_mercado_livre = new PedidoMercadoLivre();
+            $pedido_mercado_livre->pedido_meli_id       = (string) ArrayHelper::getValue($order, 'body.id');
+            $pedido_mercado_livre->total_amount         = ArrayHelper::getValue($order, 'body.total_amount');
+            $pedido_mercado_livre->date_created         = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.date_created'), 0, 19));
+            $pedido_mercado_livre->date_closed          = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.date_closed'), 0, 19));
+            $pedido_mercado_livre->last_updated         = str_replace("T", " ", substr(ArrayHelper::getValue($order, 'body.last_updated'), 0, 19));
+            $pedido_mercado_livre->paid_amount          = (string) ArrayHelper::getValue($order, 'body.paid_amount');
+            $pedido_mercado_livre->shipping_id          = (string) ArrayHelper::getValue($order, 'body.shipping.id');
+            $pedido_mercado_livre->status               = (string) ArrayHelper::getValue($order, 'body.status');
+            $pedido_mercado_livre->buyer_id             = (string) ArrayHelper::getValue($order, 'body.buyer.id');
+            $pedido_mercado_livre->buyer_nickname       = (string) (isset($order["body"]->buyer->nickname)) ? ArrayHelper::getValue($order, 'body.buyer.nickname') : "";
+            $pedido_mercado_livre->buyer_email          = (string) (isset($order["body"]->buyer->email)) ? ArrayHelper::getValue($order, 'body.buyer.email') : "";
+            $pedido_mercado_livre->buyer_first_name     = (string) ArrayHelper::getValue($order, 'body.buyer.first_name');
+            $pedido_mercado_livre->buyer_last_name      = (string) ArrayHelper::getValue($order, 'body.buyer.last_name');
+            $pedido_mercado_livre->buyer_doc_type       = (string) $billing_info["body"]->billing_info->doc_type;
+            $pedido_mercado_livre->buyer_doc_number     = (string) $billing_info["body"]->billing_info->doc_number;
+            $pedido_mercado_livre->user_id              = (string) ArrayHelper::getValue($order, 'body.seller.id');
+            $pedido_mercado_livre->pack_id              = (string) ArrayHelper::getValue($order, 'body.pack_id');
+            //$pedido_mercado_livre->email_enderecos      = "entregasp.pecaagora@gmail.com, notafiscal.pecaagora@gmail.com, compras.pecaagora@gmail.com";
+	    $pedido_mercado_livre->email_enderecos      = "notafiscal.pecaagora@gmail.com, compras.pecaagora@gmail.com";
+
+            if ($pedido_mercado_livre->save()) {
+                $status_retorno .= "\nPedido criado";
+            } else {
+                return $status_retorno .= ($e_html) ? "<br><span style='color: red;'>Pedido não criado</span>" : "Pedido não criado";
+            }
+        }
+
+        if ($pedido_mercado_livre) {
+
+            $produtos_email = "
+DESTACAR O ST RECOLHIDO ANTERIORMENTE EM INFORMAÇÕES ADICIONAIS E TAMBÉM NO XML DA NOTA, CASO CONTRÁRIO A MESMA SERÁ RECUSADA.
+                
+Cód.: {codigo}
+Descrição: {descricao}
+Quantidade: {quantidade}
+Valor: R$ {valor}
+Observação: {observacao}
+NCM: {ncm}
+PA{pa}
+                
+                
+Envio: Carmópolis de Minas, 963, Vila Maria.
+                
+  
+Atenciosamente,
+                
+                
+Peça Agora
+Site: https://www.pecaagora.com/
+E-mail: compras.pecaagora@gmail.comSetor de Compras:(32)3015-0023Whatsapp:(32)988354007
+Skype: pecaagora";
+
+            foreach (ArrayHelper::getValue($order, 'body.order_items') as $k => $produto) {
+
+                $pedido_mercado_livre_produto = PedidoMercadoLivreProduto::find()->andWhere(['=', 'pedido_mercado_livre_id', $pedido_mercado_livre->id])
+                    ->andWhere(['=', 'produto_meli_id', ArrayHelper::getValue($produto, 'item.id')])
+                    ->one();
+                if ($pedido_mercado_livre_produto) {
+                    $pedido_mercado_livre_produto->pedido_mercado_livre_id = $pedido_mercado_livre->id;
+                    $pedido_mercado_livre_produto->produto_meli_id         = ArrayHelper::getValue($produto, 'item.id');
+                    $pedido_mercado_livre_produto->title                   = ArrayHelper::getValue($produto, 'item.title');
+                    $pedido_mercado_livre_produto->categoria_meli_id       = ArrayHelper::getValue($produto, 'item.category_id');
+                    $pedido_mercado_livre_produto->condition               = ArrayHelper::getValue($produto, 'item.condition');
+                    $pedido_mercado_livre_produto->quantity                = ArrayHelper::getValue($produto, 'quantity');
+                    $pedido_mercado_livre_produto->unit_price              = ArrayHelper::getValue($produto, 'unit_price');
+                    $pedido_mercado_livre_produto->full_unit_price         = ArrayHelper::getValue($produto, 'full_unit_price');
+                    $pedido_mercado_livre_produto->sale_fee                = ArrayHelper::getValue($produto, 'sale_fee');
+                    $pedido_mercado_livre_produto->listing_type_id         = ArrayHelper::getValue($produto, 'listing_type_id');
+
+                    //$produto_filial = ProdutoFilial::find()->andWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])->one();
+                    $produto_filial = ProdutoFilial::find()->orWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_sem_juros', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_full', ArrayHelper::getValue($produto, 'item.id')])
+			->orWhere(['=', 'meli_id_flex', ArrayHelper::getValue($produto, 'item.id')])
+                        ->one();
+                    if ($produto_filial) {
+                        $pedido_mercado_livre_produto->produto_filial_id = $produto_filial->id;
+                    }
+
+                    if ($pedido_mercado_livre_produto->save()) {
+                        $status_retorno .= "\nProduto alterado";
+                    } else {
+                        $status_retorno .= "\nProduto não alterado";
+                    }
+                } else {
+                    //echo "<pre>==>"; print_r($pedido_mercado_livre->id); echo "<==</pre>"; die;
+                    $pedido_mercado_livre_produto                          = new PedidoMercadoLivreProduto();
+                    $pedido_mercado_livre_produto->pedido_mercado_livre_id = $pedido_mercado_livre->id;
+                    $pedido_mercado_livre_produto->produto_meli_id         = ArrayHelper::getValue($produto, 'item.id');
+                    $pedido_mercado_livre_produto->title                   = ArrayHelper::getValue($produto, 'item.title');
+                    $pedido_mercado_livre_produto->categoria_meli_id       = ArrayHelper::getValue($produto, 'item.category_id');
+                    $pedido_mercado_livre_produto->condition               = ArrayHelper::getValue($produto, 'item.condition');
+                    $pedido_mercado_livre_produto->quantity                = ArrayHelper::getValue($produto, 'quantity');
+                    $pedido_mercado_livre_produto->unit_price              = ArrayHelper::getValue($produto, 'unit_price');
+                    $pedido_mercado_livre_produto->full_unit_price         = ArrayHelper::getValue($produto, 'full_unit_price');
+                    $pedido_mercado_livre_produto->sale_fee                = ArrayHelper::getValue($produto, 'sale_fee');
+                    $pedido_mercado_livre_produto->listing_type_id         = ArrayHelper::getValue($produto, 'listing_type_id');
+
+                    //$produto_filial = ProdutoFilial::find()->andWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])->one();
+                    $produto_filial = ProdutoFilial::find()->orWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_sem_juros', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_full', ArrayHelper::getValue($produto, 'item.id')])
+			->orWhere(['=', 'meli_id_flex', ArrayHelper::getValue($produto, 'item.id')])
+                        ->one();
+                    if ($produto_filial) {
+                        $pedido_mercado_livre_produto->produto_filial_id = $produto_filial->id;
+                    }
+
+                    if ($pedido_mercado_livre_produto->save()) {
+                        $status_retorno .= "\nProduto criado";
+                    } else {
+                        $status_retorno .= "\nProduto não criado";
+                    }
+                }
+            }
+
+            //Cadastra os dados dos pagamentos
+            foreach (ArrayHelper::getValue($order, 'body.payments') as $k => $pagamento) {
+
+                $pedido_mercado_livre_pagamento = PedidoMercadoLivrePagamento::find()->andWhere(['=', 'pedido_mercado_livre_id', $pedido_mercado_livre->id])
+                    ->andWhere(['=', 'pagamento_meli_id', ArrayHelper::getValue($pagamento, 'id')])
+                    ->one();
+                if ($pedido_mercado_livre_pagamento) {
+                    $pedido_mercado_livre_pagamento->pedido_mercado_livre_id    = $pedido_mercado_livre->id;
+                    $pedido_mercado_livre_pagamento->pagamento_meliere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])->one();
+                    $produto_filial = ProdutoFilial::find()->orWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_sem_juros', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_full', ArrayHelper::getValue($produto, 'item.id')])
+			->orWhere(['=', 'meli_id_flex', ArrayHelper::getValue($produto, 'item.id')])
+                        ->one();
+                    if ($produto_filial) {
+                        $pedido_mercado_livre_produto->produto_filial_id = $produto_filial->id;
+                    }
+
+                    if ($pedido_mercado_livre_produto->save()) {
+                        $status_retorno .= "\nProduto alterado";
+                    } else {
+                        $status_retorno .= "\nProduto não alterado";
+                    }
+                } else {
+                    //echo "<pre>==>"; print_r($pedido_mercado_livre->id); echo "<==</pre>"; die;
+                    $pedido_mercado_livre_produto                          = new PedidoMercadoLivreProduto();
+                    $pedido_mercado_livre_produto->pedido_mercado_livre_id = $pedido_mercado_livre->id;
+                    $pedido_mercado_livre_produto->produto_meli_id         = ArrayHelper::getValue($produto, 'item.id');
+                    $pedido_mercado_livre_produto->title                   = ArrayHelper::getValue($produto, 'item.title');
+                    $pedido_mercado_livre_produto->categoria_meli_id       = ArrayHelper::getValue($produto, 'item.category_id');
+                    $pedido_mercado_livre_produto->condition               = ArrayHelper::getValue($produto, 'item.condition');
+                    $pedido_mercado_livre_produto->quantity                = ArrayHelper::getValue($produto, 'quantity');
+                    $pedido_mercado_livre_produto->unit_price              = ArrayHelper::getValue($produto, 'unit_price');
+                    $pedido_mercado_livre_produto->full_unit_price         = ArrayHelper::getValue($produto, 'full_unit_price');
+                    $pedido_mercado_livre_produto->sale_fee                = ArrayHelper::getValue($produto, 'sale_fee');
+                    $pedido_mercado_livre_produto->listing_type_id         = ArrayHelper::getValue($produto, 'listing_type_id');
+
+                    //$produto_filial = ProdutoFilial::find()->andWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])->one();
+                    $produto_filial = ProdutoFilial::find()->orWhere(['=', 'meli_id', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_sem_juros', ArrayHelper::getValue($produto, 'item.id')])
+                        ->orWhere(['=', 'meli_id_full', ArrayHelper::getValue($produto, 'item.id')])
+			->orWhere(['=', 'meli_id_flex', ArrayHelper::getValue($produto, 'item.id')])
+                        ->one();
+                    if ($produto_filial) {
+                        $pedido_mercado_livre_produto->produto_filial_id = $produto_filial->id;
+                    }
+
+                    if ($pedido_mercado_livre_produto->save()) {
+                        $status_retorno .= "\nProduto criado";
+                    } else {
+                        $status_retorno .= "\nProduto não criado";
+                    }
+                }
+            }
+
+            //Cadastra os dados dos pagamentos
+            foreach (ArrayHelper::getValue($order, 'body.payments') as $k => $pagamento) {
+
+                $pedido_mercado_livre_pagamento = PedidoMercadoLivrePagamento::find()->andWhere(['=', 'pedido_mercado_livre_id', $pedido_mercado_livre->id])
+                    ->andWhere(['=', 'pagamento_meli_id', ArrayHelper::getValue($pagamento, 'id')])
+                    ->one();
+                if ($pedido_mercado_livre_pagamento) {
+                    $pedido_mercado_livre_pagamento->pedido_mercado_livre_id    = $pedido_mercado_livre->id;
+                    $pedido_mercado_livre_pagamento->pagamento_meli

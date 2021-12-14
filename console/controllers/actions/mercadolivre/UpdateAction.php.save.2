@@ -1,0 +1,175 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: igorm
+ * Date: 27/06/2016
+ * Time: 18:54
+ */
+/* SELECT id from produto_filial where produto_id = (SELECT id from produto WHERE codigo_global='242337'); */
+namespace console\controllers\actions\mercadolivre;
+
+
+use common\models\Filial;
+use common\models\ProdutoFilial;
+use Livepixel\MercadoLivre\Meli;
+use Yii;
+use yii\helpers\ArrayHelper;
+
+class UpdateAction extends Action
+{
+    public function run()
+    {
+        $meli = new Meli(static::APP_ID, static::SECRET_KEY);
+        $filials = Filial::find()
+            ->andWhere(['IS NOT', 'refresh_token_meli', null])
+            //->andWhere(['id' => 81])
+            ->all();
+
+        /* @var $filial Filial */
+        foreach ($filials as $filial) {
+            //echo "Inicio da filial: " . $filial->nome . "\n";
+
+            $user = $meli->refreshAccessToken($filial->refresh_token_meli);
+            $response = ArrayHelper::getValue($user, 'body');
+
+            if (is_object($response) && ArrayHelper::getValue($user, 'httpCode') < 400) {
+                $meliAccessToken = $response->access_token;
+
+                $produtoFilials = $filial->getProdutoFilials()
+                    ->andWhere(['is not','meli_id',null])
+                    //->andWhere(['>','quantidade',0])
+		    //->andWhere(['produto_filial.meli_id' => ['MLB902690974','MLB902688599','MLB902688135','MLB901637498','MLB901637474','MLB901634432','MLB901634355','MLB901632053','MLB883829737','MLB883829729','MLB883829060','MLB883826670','MLB883826045','MLB883823087','MLB883822597','MLB883822548','MLB878430957','MLB878430869','MLB878428448','MLB878428148','MLB878427818','MLB878430933','MLB878425409','MLB878424368','MLB878424322','MLB878424320','MLB878424319','MLB878424238','MLB878420385','MLB878417026','MLB878416854','MLB878416455','MLB867585627','MLB867582534','MLB867580200','MLB867579570','MLB867548827','MLB867546654','MLB867546420','MLB867030252','MLB867030240','MLB864745698','MLB864743306','MLB864743167','MLB864742850','MLB864742797','MLB864741037','MLB864741034','MLB864740968','MLB864739185','MLB864738503','MLB864735651','MLB864734581','MLB864734560','MLB864733844','MLB864733578','MLB864732246','MLB864731967','MLB878409527','MLB878407033','MLB864686937','MLB864730036','MLB864727713','MLB864727289','MLB864726881','MLB864726597','MLB864693316','MLB864689989','MLB864689732','MLB864689260','MLB864689110','MLB864688253','MLB864687925','MLB864686653','MLB864684292','MLB864684200','MLB864680442','MLB864680185']])
+		    //->andWhere(['produto_filial.id' => []])
+		    //->andWhere(['produto_filial.id' => [100840, 100843, 100842, 100837]])
+		    //->andWhere(['produto_filial.meli_id' => ['MLB1063749802']])
+		    ->orderBy('produto_filial.id')
+                    ->all();
+
+                /* @var $produtoFilial ProdutoFilial */
+                foreach ($produtoFilials as $k => $produtoFilial) {
+		    //echo $produtoFilial->produto->nome . "\n ";
+                    //if ($k > 13560 && $produtoFilial->produto->fabricante_id != null) {
+		    if ($produtoFilial->produto->fabricante_id != null) {
+		    	echo $k ." - ". $produtoFilial->id ." - ";
+	
+	                    //$subcategoriaMeli = $produtoFilial->produto->subcategoria->meli_id;
+	                    //if (!isset($subcategoriaMeli)) {
+	                    //    continue;
+	                    //}
+	                    if (is_null($produtoFilial->valorMaisRecente)) {
+	                        Yii::error("Produto Filial: {$produtoFilial->produto->nome}({$produtoFilial->id}), não possui valor",
+	                            'error_yii');
+	                        continue;
+	                    }
+			
+	                    //$page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produto.php',['produto' => $produtoFilial]);
+			    $page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produtoML.php',['produto' => $produtoFilial]);
+	
+	                    $title = Yii::t('app', '{nome} ({cod})', [
+	                        'cod' => $produtoFilial->produto->codigo_global,
+	                        'nome' => $produtoFilial->produto->nome
+	                    ]);
+	                    //Update Item
+			    //echo "******sd******";
+	                    $body = [
+	                        "title" => ((strlen($title) <= 60) ? $title : substr($title, 0, 60)),
+				//"category_id" => utf8_encode($subcategoriaMeli),
+	                        "price" => round($produtoFilial->getValorMercadoLivre(), 2),
+	                        "available_quantity" => $produtoFilial->quantidade,
+				'attributes' =>[
+                	            [
+        	                        'id' => 'PART_NUMBER',
+        	                        'name' => 'Número da peça',
+        	                        'value_id' => NULL,
+        	                        'value_name' => $produtoFilial->produto->codigo_global,
+        	                        'value_struct' => NULL,
+        	                        'attribute_group_id' => 'DFLT',
+        	                        'attribute_group_name' => 'Outros',
+        	                    ],
+        	                    [
+        	                        "id"=> "BRAND",
+        	                        "name"=> "Marca",
+        	                        "value_id"=> null,
+        	                        "value_name"=> $produtoFilial->produto->fabricante->nome,
+        	                        "value_struct"=> null,
+        	                        "attribute_group_id"=> "OTHERS",
+        	                        "attribute_group_name"=> "Outros"
+                        	    ],
+	
+	                        ]
+	
+	                    ];
+   			    //echo "------0------";
+        	            $response = $meli->put(
+        	                "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+        	                $body,
+        	                []
+        	            );
+			    //echo "------1-----";
+        	            Yii::info($response, 'mercado_livre_update');
+        	            if ($response['httpCode'] >= 300) {
+        	                Yii::error($response['body'], 'mercado_livre_update');
+        	            }
+	
+	                    //Update Descrição
+	                    //$body = ['text' => $page];
+			    $body = ['plain_text' => $page];
+	                    $response = $meli->put(
+	                        "items/{$produtoFilial->meli_id}/description?access_token=" . $meliAccessToken,
+	                        $body,
+        	                []
+	                    );
+	                    Yii::info($response, 'mercado_livre_update');
+        	            if ($response['httpCode'] >= 300) {
+        	                Yii::error($response['body'], 'mercado_livre_update');
+        	            }
+	
+			    //1 para me2 (Mercado Envios)
+		            //2 para not_especified (a combinar)
+		            //3 para customizado
+
+			    switch ($produtoFilial->envio) {
+				case 1:
+	        			$modo = "me2";
+	        			break;
+				case 2:
+	        			$modo = "not_specified";
+	        			break;
+	    			case 3:
+	        			$modo = "custom";
+	       				break;
+			    }
+			    //echo "$".$modo."$";
+        	            //Update Imagem
+        	            $body = [
+        	                "pictures" => $produtoFilial->produto->getUrlImagesML(),
+				"available_quantity" => $produtoFilial->quantidade,
+				"price" => round($produtoFilial->getValorMercadoLivre(), 2),
+        	                "shipping" => [
+        	                    "mode" => $modo,
+        	                    "local_pick_up" => true,
+        	                    "free_shipping" => false,
+        	                    "free_methods" => [],
+        	                ],
+        	                "warranty" => "6 meses",
+        	            ];
+	
+	                    $response = $meli->put(
+	                        "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+	                        $body,
+	                        []
+	                    );
+			    //print_r($response);
+			    //print_r(ArrayHelper::getValue($response, 'body.permalink'));echo "\n\n";
+	                    Yii::info($response, 'mercado_livre_update');
+	                    if ($response['httpCode'] >= 300) {
+	                        Yii::error($response['body'], 'mercado_livre_update');
+	                    }
+	                    echo "ok \n";
+		    }
+                }
+            }
+            //echo "Fim da filial: " . $filial->nome . "\n";
+        }
+    }
+}

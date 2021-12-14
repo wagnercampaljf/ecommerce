@@ -1,0 +1,112 @@
+.header-product-view h1 span .codigo-nome {
+    font-size: 22px !important
+}
+
+.header-product-view h1 {
+    font-size: 28px
+}
+
+.categorias-portal.nav > li > a {
+    position: relative;
+    display: block;
+    padding: 10px 5px
+}
+
+.lead {
+    font-size: 20px
+}
+
+@media (min-width: 768px) {
+    .title-categoria .categorias {
+        display: none
+    }
+
+    .categorias {
+        display: block
+    }
+
+    .header-product-view h1 span .codigo-nome {
+        font-size: 30px !important
+    }
+
+    .categorias-portal.nav > li > a {
+        position: relative;
+        display: block;
+        padding: 10px 15px
+    }
+}
+
+@media (min-width: 992px) {
+    .title-categoria .categorias {
+        display: none
+    }
+
+    .categorias {
+        display: block
+    }
+
+    .header-product-view h1 span .codigo-nome {
+        font-size: 30px !important
+    }
+
+    .categorias-portal.nav > li > a {
+        position: relative;
+        display: block;
+        padding: 10px 15px
+    }
+}
+
+@media (min-width: 1200px) {
+    .title-categoria .categorias {
+        display: none
+    }
+
+    .categorias {
+        display: block
+    }
+
+    .header-product-view h1 span .codigo-nome {
+        font-size: 30px !important
+    }
+
+    .categorias-portal.nav > li > a {
+        position: relative;
+        display: block;
+        padding: 10px 15px
+    }
+}
+
+a.title-categoria-label {
+    text-decoration: none
+}
+
+.title-categoria .title-categoria-label:hover, .title-categoria .title-categoria-label:focus {
+    color: #007576
+}
+
+.title-categoria {
+    padding-bottom: 5px
+}
+
+.categoriasFooter hr {
+    margin-top: 15px !important;
+    margin-bottom: 5px !important
+}
+
+.categoriaFooter {
+    font-size: 16px !important
+}
+
+.divCategoriaFooter {
+    margin-bottom: 15px !important
+}
+
+.subcategoriaFooter {
+    font-size: 12px !important
+}
+
+.introDescricao {
+    max-height: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

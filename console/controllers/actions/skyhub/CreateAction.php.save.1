@@ -1,0 +1,71 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: tercio
+ * Date: 28/08/17
+ * Time: 15:33
+ */
+
+namespace console\controllers\actions\skyhub;
+
+use common\models\Filial;
+use common\models\ProdutoFilial;
+use Yii;
+use yii\base\Action;
+use console\models\SkyhubClient;
+
+class CreateAction extends Action
+{
+    public function run()
+    {
+        echo "Criando produtos...\n\n";
+        $skyhub = new SkyhubClient();
+
+        $filials = Filial::find()
+//            ->andWhere(['IS', 'integrar_b2w', true])
+//            ->andWhere(['id' => [60, 72, 76, 86]])
+//            ->limit(1)
+            ->all();
+
+        /* @var $filial Filial */
+        foreach ($filials as $filial) {
+          	echo "Inicio da filial: " . $filial->nome . "\n";
+ 		 $produtoFilials = $filial->getProdutoFilials()->hasImage()
+                //->andWhere(['>','quantidade',0])
+                ->andWhere(['IS NOT','status_b2w',null])
+		//->andWhere(['produto_filial.id' => [138758, 138759, 138760, 138762, 138763, 138764]])
+                ->all();
+
+            /* @var $produtoFilial ProdutoFilial */
+            foreach ($produtoFilials as $k => $produtoFilial) {
+		echo $k." - ".$produtoFilial->produto->id."\n";
+
+             	if (is_null($produtoFilial->valorMaisRecente)) {
+                    Yii::error("Produto Filial: {$produtoFilial->produto->nome}({$produtoFilial->id}), não possui valor",
+                        'error_yii');
+                    continue;
+                }
+
+                if ($produtoFilial->status_b2w === null) {
+                    echo $k . " - " . $produtoFilial->produto_id . " - ok";
+                    //$response = $skyhub->products()->create($produtoFilial->getSkyhubData());
+                } else {
+                    echo $k . " - " . $produtoFilial->produto_id . " - up";
+                    //$response = $skyhub->products()->update($produtoFilial->id, $produtoFilial->getSkyhubData());
+                }
+
+                if (!$response->isOk) {
+		    print_r($response);
+                    echo "Erro ao cadastrar Produto x Filial de id: $produtoFilial->id\n";
+                } else {
+		    echo " - ok \n";
+                    $produtoFilial->status_b2w = true;
+                    $produtoFilial->save();
+                }
+            }
+	    echo "Fim da filial: " . $filial->nome . "\n";
+        }
+        echo "Finalizado";
+    }
+
+}

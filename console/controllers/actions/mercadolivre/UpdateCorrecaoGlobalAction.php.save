@@ -1,0 +1,683 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: igorm
+ * Date: 27/06/2016
+ * Time: 18:54
+ */
+/* SELECT id from produto_filial where produto_id = (SELECT id from produto WHERE codigo_global='242337'); */
+namespace console\controllers\actions\mercadolivre;
+
+
+use common\models\Filial;
+use common\models\ProdutoFilial;
+use Livepixel\MercadoLivre\Meli;
+use Yii;
+use yii\helpers\ArrayHelper;
+
+class UpdateCorrecaoGlobalAction extends Action
+{
+    public function run()
+    {
+	$meli = new Meli(static::APP_ID, static::SECRET_KEY);
+
+	//Código de criação da tabela de preços baseadas no ME
+	//$user = $meli->refreshAccessToken('TG-5b5f1c7be4b09e746623a2ca-193724256');
+       	/*$user = $meli->refreshAccessToken('TG-5c4f26ef9b69e60006493768-193724256');
+        $response = ArrayHelper::getValue($user, 'body');
+
+        $produto_frete['0'] = 0;
+
+        if (is_object($response) && ArrayHelper::getValue($user, 'httpCode') < 400) {
+            $meliAccessToken = $response->access_token;
+
+            $x = 0;
+            $y = 0;
+
+            $data_atual = date('Y-m-d');
+
+            $response_order = $meli->get('https://api.mercadolibre.com/orders/search?seller=193724256&offset='.$x.'&order.date_created.from=2017-01-01T00:00:00.000-00:00&order.date_created.to='.$data_atual.'T23:59:59.000-00:00&access_token=' . $meliAccessToken);
+            while (ArrayHelper::getValue($response_order, 'body.results') != null){
+                foreach (ArrayHelper::getValue($response_order, 'body.results') as $k => $venda){
+                    if(ArrayHelper::getValue($venda, 'shipping.shipping_mode')=='me2'){
+                        $y++;
+                        echo "\n".$y." - ";print_r(ArrayHelper::getValue($venda, 'id')); 
+
+                        foreach(ArrayHelper::getValue($venda, 'shipping.shipping_items') as $itens){
+                            $response_valor_dimensao = $meli->get("/users/193724256/shipping_options/free?dimensions=".str_replace(".0","",ArrayHelper::getValue($itens, 'dimensions')));
+                            $produto_frete[ArrayHelper::getValue($itens, 'id')] = ArrayHelper::getValue($response_valor_dimensao, 'body.coverage.all_country.list_cost');
+                        }
+                    }
+                }
+
+                $x += 50;
+                $response_order = $meli->get('https://api.mercadolibre.com/orders/search?seller=193724256&offset='.$x.'&order.date_created.from=2017-01-01T00:00:00.000-00:00&order.date_created.to='.$data_atual.'T23:59:59.000-00:00&access_token=' . $meliAccessToken);
+            }
+            //var_dump(ArrayHelper::keyExists('MLB864729660', $produto_frete, false));
+            //var_dump(ArrayHelper::getValue($produto_frete, 'MLB864729660'));
+        }
+	echo "Tabela de preços gerada!\n";*/
+	//Código de criação da tabela de preços baseadas no ME
+
+        $filials = Filial::find() 
+            ->andWhere(['IS NOT', 'refresh_token_meli', null])
+            //->andWhere(['id' => [74,92,4,86,71]])
+	    ->andWhere(['<>','id', 43])
+	    //->andWhere(['=','id', 72])
+	    //->andWhere(['<>','id', 77])
+	    //->andWhere(['<>','id', 78])
+	    //->andWhere(['=','id', 86])
+	    //->andWhere(['id' => [60]])
+            ->all();
+
+	$filial_duplicada		= Filial::find()->andWhere(['=', 'id', 43])->one();
+	$user_duplicada			= $meli->refreshAccessToken($filial_duplicada->refresh_token_meli);
+	$response_duplicada		= ArrayHelper::getValue($user_duplicada, 'body');
+	$meliAccessToken_duplicada	= $response_duplicada->access_token;
+	//print_r($meliAccessToken_duplicada); die;
+
+        /* @var $filial Filial */
+        foreach ($filials as $filial) {
+            echo "Inicio da filial: " . $filial->nome . "\n";
+
+            $user = $meli->refreshAccessToken($filial->refresh_token_meli);
+	    //print_r($user);
+            $response = ArrayHelper::getValue($user, 'body');
+	    //print_r($response);
+            if (is_object($response) && ArrayHelper::getValue($user, 'httpCode') < 400) {
+                $meliAccessToken = $response->access_token;
+                $produtoFilials = $filial->getProdutoFilials()
+		    ->joinWith('produto')
+                    //->andWhere(['like','upper(produto.nome)','SUPORTE'])
+		    //->andWhere(['like','upper(produto.nome)','PARACHOQUE'])
+                    //->andWhere(['is not','meli_id',null])
+                    ->andWhere(['>','quantidade',0])
+		    //->andWhere(['produto_filial.meli_id'=>[]])
+		    ->andWhere(['produto_filial.meli_id'=>['MLB901634941','MLB1104344932','MLB1104339610','MLB1124083972','MLB1196596989','MLB878436683','MLB1141699138','MLB883825964','MLB883829444','MLB878421692','MLB1094833173']])
+		    //->andWhere(['produto_filial.produto_id'=>[10511,34057,8700,7078,32308,9307,8644,7496,47819,49090,28801,8780,6691]])
+		    //->andWhere(['produto_filial.id'=>[249770,6434,6436,6464,6469,6441,6437,6433,6472,6432,6611,6631,6601,6610,6632,6609,6612,6650,6653,6671,5709,5759,6193,5757,6195,6364,6198,6366,6255,6367,6466,6203,6258,6365,6431,6254,6299,6300,6298,6318,57860,57861,34161,34194,35283,70273,139675,139676,70970,70972,70973,140705,140707,140708,140710,140711,140712,140713,140709,33977,34206,52977,52978,55413,55414,55479,55563,55564,55577,55630,55326,55464,55465,55466,55467,55472,55473,55474,55543,55578,55292,55468,55631,55477,34098,136733,136685,100525,100678,70967,70962,70963,70964,70965,70966,72693,36341,36306,34054,36997,38451,34928,140706,140714,140715,138915,138916,56769,37391,72381,137455,137467,148145,137187,136737,134208,189480,38447,34322,37384,37355,34875,34162,37305,34381,37201,36135,33972,34885,36095,37052,34895,36292,37050,36252,37341,33894,33853,36319,36217,37452,34640,36937,37041,38453,100849,34700,36099,137406,111781,112214,112145,111882,111883,111885,111886,111953,111955,112185,112086,112186,112144,112188,112190,112150,112152,112167,112211,112213,112195,112197,112222,112165,112215,112212,112147,100826,112409,112410,111729,111728,111776,111777,111733,111780,111816,111815,111818,111860,111933,111937,111998,112088,112130,112132,112142,111772,111794,111817,111844,111857,111887,111935,111940,111954,112381,112217,111732,111731,111770,111771,111773,111774,111779,111819,112089,112114,112120,112129,112131,112133,112134,112139,112140,112146,112191,112194,112196,112228,112003,100825,111796,111854,111855,111856,111858,111859,112009,112011,111820,111861,111941,111942,112119,111943,111944,111956,112044,112052,112053,112087,111997,112115,112128,112135,33781,112180,100833,100834,37379,34996,37261,132345,34427,34152,111936,133343,133355,133356,133380,133381,133344,133345,133346,133366,133367,112141,112143,112045,111884,111934,111938,111939,133496,112138,111845,134371,134685,112189,34389,134374,33890,70275,70457,70458,70512,70521,70621,70674,70946,70948,70949,70951,70957,70958,70969,70975,70272,70274,71226,71227,71228,71229,71230,71231,70370,70517,70523,70608,70622,70675,70511,70944,70947,70950,70956,70959,70968,70971,71501,70336,70509,70510,70516,70518,70587,70607,70960,70961,70952,70954,70955,70976,71232,70508,70953,70974,138895,138962,138963,139039,139040,139108,139111,71256,142510,34396,38347,36942,139054,142638,143018,143147,143192,143731,143732,143793,142518,142519,144217,143146,143191,143436,144168,70945,145719,145720,145824,145895,145896,145953,113696,72268,115584,137224,137179,137405,148144,160838,160839,160841,161517,161518,161614,160840,160845,160846,161615,137173,137131,136979,185013,185014,185770,185771,185772,185784,185785,185786,185788,185789,185790,185791,185793,185795,185796,185797,185798,185799,185800,185801,185803,186683,186805,186806,186867,187006,187007,187245,137181,241157,241158,241159,241160,241161,241162,241163,241165,241166,241167,241168,241170,241171,241172,241173,241175,241176,241747,241748,242253,242570,242882,243589,243687,243794,243806,243919,244027,244028,244137,244138,244302,244303,244592,244656,244704,244738,244910,245741,245809,245854,245856,245873,246324,246517,246640,246733,246734,247163,247219,247249,247284,248633,248634,248636,248650,248791,248711,248898,248841,248799,248863,248826,248899,249099,249067,249068,249065,249191,249187,249226,249186,249227,249595,56579,111693,111730,111775,111778,111782,111783,111795,111999,112004,112010,112012,112148,112149,112151,112153,112158,112159,112166,112168,112169,112170,112172,112179,112216,112218,112223,112226,112227,112229,249701,6221,145823,185787,185792,185794,185802,241164,241169,241174,242222,243688,244026,244909,245156,245157,245855,248712]])
+		    ->orderBy('produto_filial.id')
+                    ->all();
+		    //print_r($produtoFilials);
+                /* @var $produtoFilial ProdutoFilial */
+                foreach ($produtoFilials as $k => $produtoFilial) {
+		    //echo $produtoFilial->produto->nome . "\n "; continue;
+                    //if ($produtoFilial->produto->fabricante_id != 109) {
+		    //if($produtoFilial->filial_id == 96 and $produtoFilial->produto->fabricante_id != 109){
+		    /*if($produtoFilial->produto->altura <= 70 and $produtoFilial->produto->largura <= 70 and $produtoFilial->produto->profundidade <= 70){
+		    	continue;
+		    }*/
+
+		    if ($produtoFilial->produto->fabricante_id != null) {
+			    $title = Yii::t('app', '{nome} ({cod})', [
+                                'cod' => $produtoFilial->produto->codigo_global,
+                                'nome' => $produtoFilial->produto->nome
+                            ]);
+
+			    echo "\n".$k ." - ". $produtoFilial->id ." - ".$produtoFilial->meli_id." - ".((strlen($title) <= 60) ? $title : substr($title, 0, 60));
+			    //continue;
+
+			    //Preço, descomentar quanto for alterar preços
+			    $preco = round($produtoFilial->getValorMercadoLivre(), 2);
+
+			    /*if($preco >= 120){
+				echo "Preço maior";
+				continue;
+			    }*/
+//echo "===><===";
+			    /*if (ArrayHelper::keyExists($produtoFilial->meli_id, $produto_frete, false)){
+				//$preco += round((ArrayHelper::getValue($produto_frete, $produtoFilial->meli_id)/2), 2);
+
+				if($preco>=510){
+				    $preco += round((ArrayHelper::getValue($produto_frete, $produtoFilial->meli_id)/2), 2);
+                            	    $preco = $preço-10;
+                            	} 
+				//elseif($preco<=120){
+                            	//    $preco =  $preco-5;
+                            	//}
+				elseif($preco > 120 && $preco < 510){
+				    $preco += round((ArrayHelper::getValue($produto_frete, $produtoFilial->meli_id)/2), 2);
+                            	    $preco =  $preco-16;
+                            	}
+			    }*/
+			    //echo "\n".$k ." - ". $produtoFilial->id ." - ".$produtoFilial->meli_id." - ";
+			    //echo $produtoFilial->produto->subcategoria_id ." - ". $produtoFilial->produto->subcategoria->meli_id ;
+
+			    $subcategoriaMeli = "MLB191833"; //Subcategoria para 70,82 - Sem ME;
+	                    //$subcategoriaMeli = $produtoFilial->produto->subcategoria->meli_id;
+	                    /*if (!isset($subcategoriaMeli)) {
+	                        continue;
+	                    } else {
+			     	if ($produtoFilial->filial_id == 70 or $produtoFilial->filial_id == 82){
+					$subcategoriaMeli = "MLB191833";
+				}
+			    }*/
+			//Aqui começa o código
+	                    /*if (is_null($produtoFilial->valorMaisRecente)) {
+	                        Yii::error("Produto Filial: {$produtoFilial->produto->nome}({$produtoFilial->id}), não possui valor",
+	                            'error_yii');
+	                        continue;
+	                    }
+			
+	                    //$page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produto.php',['produto' => $produtoFilial]);
+			    $page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produtoML.php',['produto' => $produtoFilial]);
+	
+	                    $title = Yii::t('app', '{nome} ({cod})', [
+	                        'cod' => $produtoFilial->produto->codigo_global,
+	                        'nome' => $produtoFilial->produto->nome
+	                    ]);
+	                    //Update Item
+			    //echo "******sd******";
+	                    $body = [
+	                        "title" => ((strlen($title) <= 60) ? $title : substr($title, 0, 60)),
+				//"category_id" => utf8_encode($subcategoriaMeli),
+	                        "price" => $preco,//round($produtoFilial->getValorMercadoLivre(), 2),
+	                        "available_quantity" => $produtoFilial->quantidade,
+				'attributes' =>[
+                	            [
+        	                        'id' => 'PART_NUMBER',
+        	                        'name' => 'Número da peça',
+        	                        'value_id' => NULL,
+        	                        'value_name' => $produtoFilial->produto->codigo_global,
+        	                        'value_struct' => NULL,
+        	                        'attribute_group_id' => 'DFLT',
+        	                        'attribute_group_name' => 'Outros',
+        	                    ],
+        	                    [
+        	                        "id"=> "BRAND",
+        	                        "name"=> "Marca",
+        	                        "value_id"=> null,
+        	                        "value_name"=> $produtoFilial->produto->fabricante->nome,
+        	                        "value_struct"=> null,
+        	                        "attribute_group_id"=> "OTHERS",
+        	                        "attribute_group_name"=> "Outros"
+                        	    ],
+	
+	                        ]
+	
+	                    ];
+   			    //echo "------0------";
+        	            $response = $meli->put(
+        	                "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+        	                $body,
+        	                []
+        	            );
+			    //print_r($response);
+			    //echo "------1-----";
+        	            Yii::info($response, 'mercado_livre_update');
+        	            if ($response['httpCode'] >= 300) {
+        	                Yii::error($response['body'], 'mercado_livre_update');
+        	            }
+	
+	                    //Update Descrição
+	                    //$body = ['text' => $page];
+			    $body = ['plain_text' => $page];
+	                    $response = $meli->put(
+	                        "items/{$produtoFilial->meli_id}/description?access_token=" . $meliAccessToken,
+	                        $body,
+        	                []
+	                    );
+	                    Yii::info($response, 'mercado_livre_update');
+        	            if ($response['httpCode'] >= 300) {
+        	                Yii::error($response['body'], 'mercado_livre_update');
+        	            }
+	
+			    //1 para me2 (Mercado Envios)
+		            //2 para not_especified (a combinar)
+		            //3 para customizado
+
+			    switch ($produtoFilial->envio) {
+				case 1:
+	        			$modo = "me2";
+	        			break;
+				case 2:
+	        			$modo = "not_specified";
+	        			break;
+	    			case 3:
+	        			$modo = "custom";
+	       				break;
+			    }
+			    //echo "$".$modo."$";
+
+			    $video_id = "";
+	                    $video_complemento  = explode("=",$produtoFilial->produto->video);
+	                    if (isset($video_complemento[1])){
+	                            $video_codigo       = explode("&",$video_complemento[1]);
+	                            $video_id           = $video_codigo[0];
+	                    }
+
+        	            //Update Imagem
+        	            $body = [
+        	                "pictures" => $produtoFilial->produto->getUrlImagesML(),
+				"video_id" => $video_id,
+				"available_quantity" => $produtoFilial->quantidade,
+				"price" => $preco,//round($produtoFilial->getValorMercadoLivre(), 2),
+        	                "shipping" => [
+        	                    "mode" => $modo,
+        	                    "local_pick_up" => true,
+        	                    "free_shipping" => false,
+        	                    "free_methods" => [],
+        	                ],
+        	                "warranty" => "6 meses",
+        	            ];
+	
+	                    $response = $meli->put(
+	                        "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+	                        $body,
+	                        []
+	                    );
+			    //print_r($response);
+			    //print_r(ArrayHelper::getValue($response, 'body.permalink'));echo "\n\n";
+	                    Yii::info($response, 'mercado_livre_update');
+	                    if ($response['httpCode'] >= 300) {
+	                        Yii::error($response['body'], 'mercado_livre_update');
+				echo "ERROR \n";
+				//print_r($response);
+			    } else {
+				echo " - ". ArrayHelper::getValue($response, 'body.permalink');echo "\n";
+				echo "ok \n";
+	                    }*/
+
+			//Aqui termina o código
+
+			//Update Imagem
+
+			    //Update Item
+                            //echo "******sd******";
+                            /*$body = [//"category_id" => utf8_encode($subcategoriaMeli),
+				     "shipping" => [
+                                    			"mode" => "not_specified",
+                                     			"local_pick_up" => true,
+                                     			"free_shipping" => false,
+                                     			"free_methods" => [],
+                                     	],
+				     //"price" => round($produtoFilial->getValorMercadoLivre(), 2),
+				    ];
+                            $response = $meli->put("items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken, $body, []);
+			    print_r($response);
+			    if ($response['httpCode'] >= 300) {
+				echo "Erro";//.ArrayHelper::getValue($response, 'body.permalink');
+                            }else{
+				echo "Ok - ".ArrayHelper::getValue($response, 'body.permalink');
+			    }*/
+
+			    //Update Atributos
+
+			    $lado_id 	= "-1";
+			    $lado_name	= null;
+			    if(strpos($produtoFilial->produto->nome,"ESQUERD")){
+				$lado_id    = "364128";
+				$lado_name  = "Esquerdo";
+			    }
+			    else{
+				if(strpos($produtoFilial->produto->nome,"DIREIT")){
+                                     $lado_id    = "364127";
+                                     $lado_name  = "Direito";
+                            	}
+			    }
+
+			    $posicao_id 	= "-1";
+			    $posicao_name	= null;
+			    if(strpos($produtoFilial->produto->nome,"DIANT")){
+                                $posicao_id    = "405827";
+                                $posicao_name  = "Dianteira";
+                            }
+                            else{
+                                if(strpos($produtoFilial->produto->nome,"TRAS")){
+                                     $posicao_id    = "116949";
+                                     $posicao_name  = "Traseira";
+                                }
+                            }
+
+			    switch ($produtoFilial->envio) {
+                                case 1:
+                                        $modo = "me2";
+                                        break;
+                                case 2:
+                                        $modo = "not_specified";
+                                        break;
+                                case 3:
+                                        $modo = "custom";
+                                        break;
+                            }
+
+			    $subcategoriaMeli = "MLB191833";
+			    if(($produtoFilial->produto->altura < 70) && ($produtoFilial->produto->largura < 70) && ($produtoFilial->produto->profundidade < 70)){
+				$subcategoriaMeli = "MLB251640";
+			    }
+
+                            $body = [
+				//"available_quantity" => utf8_encode($produtoFilial->quantidade),
+				//"pictures" => $produtoFilial->produto->getUrlImagesML(),
+				//"category_id" => utf8_encode($subcategoriaMeli),
+				//"price" => round($produtoFilial->getValorMercadoLivre(), 2),
+				/*"shipping" => [
+                                    "mode" => $modo,
+                                    "local_pick_up" => true,
+                                    "free_shipping" => false,
+                                    "free_methods" => [],
+                                ],*/
+				'attributes' =>[
+                                    /*[
+                                        'id' 			=> 'CONNECTOR_GENDER',
+                                        'name' 			=> 'Gênero do conector',
+                                        'value_id' 		=> '2210104',
+                                        'value_name' 		=> 'Macho',
+					'value_struct' 		=> null,
+                                        'attribute_group_id' 	=> 'OTHERS',
+                                        'attribute_group_name'	=> 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'TERMINAL_QUANTITY',
+                                        'name'                  => 'Quantidade de terminais',
+                                        'value_id'              => null,
+                                        'value_name'            => '1',
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'MODEL',
+                                        'name'                  => 'Modelo',
+                                        'value_id'              => null,
+                                        'value_name'            => 'CHAVE',
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'TIPS_DIAMETER',
+                                        'name'                  => 'Diâmetro das puntas',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'MATERIAL',
+                                        'name'                  => 'Material',
+                                        'value_id'              => '4837600',
+                                        'value_name'            => 'Aço',
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'WRENCH_LENGTH',
+                                        'name'                  => 'Comprimento da chave',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'AIRBAG_INCLUDED',
+                                        'name'                  => 'Airbag incluído',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+				    [
+                                        'id'                    => 'ORIGIN',
+                                        'name'                  => 'Origem',
+                                        'value_id'              => null,
+                                        'value_name'            => 'IMPORTADO',
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'RADIO_CONTROLS_INCLUDED',
+                                        'name'                  => 'Controles de estéreo incluídos',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'STEERING_WHEEL_GRIP_MATERIAL',
+                                        'name'                  => 'Material do agarre',
+                                        'value_id'              => '2707741',
+                                        'value_name'            => 'Sintético',
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'STEERING_WHEEL_TYPE',
+                                        'name'                  => 'Tipo',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+				    /*[
+                                        'id'                    => 'SIDE_POSITION',
+                                        'name'                  => 'Lado',
+                                        'value_id'              => $lado_id,
+                                        'value_name'            => $lado_name,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+				    [
+                                        'id'                    => 'POSITION',
+                                        'name'                  => 'Posição',
+                                        'value_id'              => $posicao_id,
+                                        'value_name'            => $posicao_name,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+                                    /*[
+                                        'id'                    => 'BUMPER_BRACKET_MATERIAL',
+                                        'name'                  => 'Material do suporte de pára-choques',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'ACCESSORY_TYPE',
+                                        'name'                  => 'Tipo de acessório',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'LENGTH',
+                                        'name'                  => 'Comprimento',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'REFRIGERANT_TYPE',
+                                        'name'                  => 'Tipo de refrigerante',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'SEALS_INCLUDED',
+                                        'name'                  => 'Selos incluídos',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'SYSTEM_PRESSURE',
+                                        'name'                  => 'Pressão do sistema',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+                                    /*[
+                                        'id'                    => 'CLUTCH_BEARING_INSIDE_DIAMETER',
+                                        'name'                  => 'Diâmetro interno do rolamento de embreagem',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => '',
+                                        'attribute_group_name'  => '',
+                                    ],
+                                    [
+                                        'id'                    => 'CLUTCH_BEARING_RACE_INCLUDED',
+                                        'name'                  => 'Pista do rolamento de embreagem incluída',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'CLUTCH_BEARING_OUTSIDE_DIAMETER',
+                                        'name'                  => 'Diâmetro externo do rolamento de embreagem',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'SEALED_CLUTCH_BEARING',
+                                        'name'                  => 'Rolamento de embreagem selado',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'BENDIX_GEAR_TEETH',
+                                        'name'                  => 'Dentes bendix',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'DIRECTION_ROTATION',
+                                        'name'                  => 'Sentido de rotação',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'STARTER_VOLTAGE',
+                                        'name'                  => 'Voltagem',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+                                    /*[
+                                        'id'                    => 'WIRE_LENGTH',
+                                        'name'                  => 'Comprimento do cabo',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+				    [
+                                        'id'                    => 'BRAKE_BOOSTER_DIAPHRAGM_TYPE',
+                                        'name'                  => 'Tipo de diafragma do servo-freio',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'BRAKE_BOOSTER_TYPE',
+                                        'name'                  => 'Tipo de servo-freio',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'BRAKE_BOOSTER_USE',
+                                        'name'                  => 'Uso do servo-freio',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'INCLUDES_MASTER_CYLINDER',
+                                        'name'                  => 'Inclui cilindro principal',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],
+                                    [
+                                        'id'                    => 'INCLUDES_PEDAL_ROD_EXTENSION',
+                                        'name'                  => 'Inclui extensão da barra do pedal',
+                                        'value_id'              => '-1',
+                                        'value_name'            => null,
+                                        'value_struct'          => null,
+                                        'attribute_group_id'    => 'OTHERS',
+                                        'attribute_group_name'  => 'Outros',
+                                    ],*/
+
+                                ]
+			    ];
+                            $response = $meli->put("items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken, $body, []);
+
+			    if ($response['httpCode'] >= 300) {
+				//print_r($response);
+                                echo "|Erro - ";//.ArrayHelper::getValue($response, 'body.permalink');
+                            }else{
+				//print_r($response);
+                            	echo " |Ok - ".ArrayHelper::getValue($response, 'body.permalink');
+
+				$produto_filial_duplicado = ProdutoFilial::find()->andWhere(['=','produto_filial_origem_id',$produtoFilial->id])->one();
+				if($produto_filial_duplicado){
+					$response_duplicada = $meli->put("items/{$produto_filial_duplicado->meli_id}?access_token=" . $meliAccessToken_duplicada, $body, []);
+					echo " |Duplicada Encontrada - ";//.ArrayHelper::getValue($response_duplicada, 'body.permalink');
+
+					if ($response_duplicada['httpCode'] >= 300) {
+                        		        echo " |Erro";
+                		        }else{
+		                                echo " |Ok";
+					}
+				}
+				else{
+					//print_r($response);
+					echo " -  Erro (Duplicada NÃO encontrada";
+				}
+                            }
+		    }
+                }
+            }
+            echo "Fim da filial: " . $filial->nome . "\n";
+        }
+    }
+}

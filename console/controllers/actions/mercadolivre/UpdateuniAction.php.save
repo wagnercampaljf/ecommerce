@@ -1,0 +1,190 @@
+
+d3Vp3ca@g0ra
+<?php
+/**
+ * Created by PhpStorm.
+ * User: igorm
+ * Date: 27/06/2016
+ * Time: 18:54
+ */
+/* SELECT id from produto_filial where produto_id = (SELECT id from produto WHERE codigo_global='242337'); */
+namespace console\controllers\actions\mercadolivre;
+
+
+use common\models\Filial;
+use common\models\ProdutoFilial;
+use Livepixel\MercadoLivre\Meli;
+use Yii;
+use yii\helpers\ArrayHelper;
+
+class UpdateuniAction extends Action
+{
+    public function run($global_id)
+    {
+        $meli = new Meli(static::APP_ID, static::SECRET_KEY);
+        $filials = Filial::find()
+            ->andWhere(['IS NOT', 'refresh_token_meli', null])
+            //->andWhere(['id' => 81])
+            ->all();
+
+        /* @var $filial Filial */
+        foreach ($filials as $filial) {
+	    //print_r($filial->nome);echo " - ";
+	    //print_r($filial->refresh_token_meli);echo " - ";		
+            $user = $meli->refreshAccessToken($filial->refresh_token_meli);
+            //print_r($user);	 
+	    $response = ArrayHelper::getValue($user, 'body');
+            //print_r($response);echo "\n";
+	    if (is_object($response) && ArrayHelper::getValue($user, 'httpCode') < 400) {
+                
+		$meliAccessToken = $response->access_token;
+                //echo "\nGlobal - ";
+		//print_r($global_id);
+		$produtoFilials = $filial->getProdutoFilials()
+                    ->andWhere([
+                        'is not',
+                        'meli_id',
+                        null
+                    ])
+                    //->andWhere(['>','quantidade',0])
+		    ->andWhere([
+                        '=',
+                        'meli_id',
+                       $global_id
+                    ])
+//                   ->andWhere([
+//                        '=',
+//                       'filial_id',
+//                        86
+//                    ])
+                    ->all();
+		//echo $filial->nome; print_r($produtoFilials);
+		/* @var $produtoFilial ProdutoFilial */
+                foreach ($produtoFilials as $produtoFilial) {
+		    //echo "produtoFIlial";
+
+                    $subcategoriaMeli = $produtoFilial->produto->subcategoria->meli_id;
+                    if (!isset($subcategoriaMeli)) {
+                        continue;
+                    }
+                    if (is_null($produtoFilial->valorMaisRecente)) {
+                        Yii::error("Produto Filial: {$produtoFilial->produto->nome}({$produtoFilial->id}), não possui valor",
+                            'error_yii');
+                        continue;
+                    }
+
+                    //$page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produto.php',['produto' => $produtoFilial]);
+		    $page = $this->controller->renderFile(__DIR__ . '/../../../../lojista/views/mercado-livre/produtoML.php',['produto' => $produtoFilial]);
+	
+                    $title = Yii::t('app', '{nome} ({cod})', [
+                        'cod' => $produtoFilial->produto->codigo_global,
+                        'nome' => $produtoFilial->produto->nome
+                    ]);
+                    //Update Item
+		    $body = [
+                        "title" => ((strlen($title) <= 60) ? $title : substr($title, 0, 60)),
+			"category_id" => utf8_encode($subcategoriaMeli),
+                        "price" => round($produtoFilial->getValorMercadoLivre(), 2),
+                        "available_quantity" => $produtoFilial->quantidade,
+			//"description" => utf8_encode($page),
+			//'description' => utf8_encode('Peca Agora'),
+			'attributes' =>[
+                            [
+                                'id' => 'PART_NUMBER',
+                                'name' => 'Número da peça',
+                                'value_id' => NULL,
+                                'value_name' => $produtoFilial->produto->codigo_global,
+                                'value_struct' => NULL,
+                                'attribute_group_id' => 'DFLT',
+                                'attribute_group_name' => 'Outros',
+                            ],
+                            [
+                                "id"=> "BRAND",
+                                "name"=> "Marca",
+                                "value_id"=> null,
+                                "value_name"=> $produtoFilial->produto->fabricante->nome,
+                                "value_struct"=> null,
+                                "attribute_group_id"=> "OTHERS",
+                                "attribute_group_name"=> "Outros"
+                            ],
+
+                        ]
+
+                    ];
+		    //print_r(json_encode($body));
+                    $response = $meli->put(
+                        "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+                        $body,
+                        []
+                    );
+		    echo "\n\n";
+		    //print_r(json_encode($response));
+                    Yii::info($response, 'mercado_livre_update');
+                    if ($response['httpCode'] >= 300) {
+                        Yii::error($response['body'], 'mercado_livre_update');
+                    }
+
+                    //Update Descrição
+                    //$body = ['text' => $page];
+		    $body = ['plain_text' => $page];
+                    $response = $meli->put(
+                        "items/{$produtoFilial->meli_id}/description?access_token=" . $meliAccessToken,
+                        $body,
+                        []
+                    );
+                    Yii::info($response, 'mercado_livre_update');
+                    if ($response['httpCode'] >= 300) {
+                        Yii::error($response['body'], 'mercado_livre_update');
+                    }
+
+		    //1 para me2 (Mercado Envios)
+	            //2 para not_especified (a combinar)
+	            //3 para customizado
+
+		    switch ($produtoFilial->envio) {
+			case 1:
+        			$modo = "me2";
+        			break;
+			case 2:
+        			$modo = "not_specified";
+        			break;
+    			case 3:
+        			$modo = "custom";
+       				break;
+		    }
+		    //print_r($produtoFilial->produto->getUrlImagesML());	
+                    //Update Imagem
+                    //$imagemTeste = array();
+		    //$imagemTeste[] = ['source' => 'http://31.220.57.2/imagens_ml/6615.jpeg'];
+		    //echo "imagem";
+		    $body = [
+                        "pictures" => $produtoFilial->produto->getUrlImagesML(),
+			//"pictures" => $imagemTeste,
+			//"description" => utf8_encode($page),
+                        "shipping" => [
+                            "mode"=> $modo,
+                            "local_pick_up" => true,
+                            "free_shipping" => false,
+                            "free_methods" => [],
+                        ],
+                        "warranty" => "6 meses",
+                    ];
+		    //print_r($body);	
+                    $response = $meli->put(
+                        "items/{$produtoFilial->meli_id}?access_token=" . $meliAccessToken,
+                        $body,
+                        []
+                    );
+		    //print_r($response);
+                    Yii::info($response, 'mercado_livre_update');
+		    print_r($body);
+		    print_r($response);
+                    if ($response['httpCode'] >= 300) {
+                        Yii::error($response['body'], 'mercado_livre_update');
+                    }
+                }
+            }
+
+        }
+    }
+}

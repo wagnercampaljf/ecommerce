@@ -1,0 +1,70 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: dev_peca_agora
+ * Date: 12/07/18
+ * Time: 09:26
+ */
+
+namespace console\controllers;
+
+
+use Yii;
+use yii\console\Controller;
+use yii\helpers\ArrayHelper;
+use yii\helpers\Console;
+
+
+class FuncoesGeraisController extends Controller
+{
+    public function actions()
+    {
+        return ArrayHelper::merge(parent::actions(), [
+            'atualizarmenormaiorpreco' 		=> 'console\controllers\actions\funcoesgerais\AtualizarmenormaiorprecoAction',
+	    'inseririmagens' 			=> 'console\controllers\actions\funcoesgerais\InseririmagensAction',
+	    'importacaoprecos'          	=> 'console\controllers\actions\funcoesgerais\ImportacaoPrecosAction',
+	    'compararprodutos'          	=> 'console\controllers\actions\funcoesgerais\CompararProdutosAction',
+	    'zerarestoque'              	=> 'console\controllers\actions\funcoesgerais\ZerarEstoqueAction',
+	    'atualizarprodutoslng'      	=> 'console\controllers\actions\funcoesgerais\AtualizarProdutosLNGAction',
+	    'importacaoprecosbonfante'  	=> 'console\controllers\actions\funcoesgerais\ImportacaoPrecosBonfanteAction',
+	    'importacaoprecosvannucci'  	=> 'console\controllers\actions\funcoesgerais\ImportacaoPrecosVanucciAction',
+	    'atualizarmultiplicador'    	=> 'console\controllers\actions\funcoesgerais\AtualizarMultiplicadorAction',
+	    'verificarexisteimagem'    		=> 'console\controllers\actions\funcoesgerais\VerificarExisteImagemAction',
+	    'importacaocodigobarras'   		=> 'console\controllers\actions\funcoesgerais\ImportacaoCodigoBarrasAction',
+	    'importacaocodigobarrasbr'  	=> 'console\controllers\actions\funcoesgerais\ImportacaoCodigoBarrasBRAction',
+	    'importacaoUniversal'       	=> 'console\controllers\actions\funcoesgerais\ImportacaoUniversalAction',
+	    'gerarimagens'              	=> 'console\controllers\actions\funcoesgerais\GerarImagensAction',
+	    'importarImagemuniversal'   	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemUniversalAction',
+	    'importarimagembr'          	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemBRAction',
+	    'atualizarnome'             	=> 'console\controllers\actions\funcoesgerais\AtualizarNomeAction',
+	    'importarimagemvannucci'    	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemVannucciAction',
+	    'importacaovannucci'        	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucciAction',
+	    'importacaovannucci2'       	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucci2Action',
+	    'importacaoUniversal2'      	=> 'console\controllers\actions\funcoesgerais\ImportacaoUniversal2Action',
+	    'subirimagenswebp'          	=> 'console\controllers\actions\funcoesgerais\SubirImagensTesteWebpAction',
+	    'importacaofconforto'       	=> 'console\controllers\actions\funcoesgerais\ImportacaoFConfortoAction',
+	    'importacaolng'             	=> 'console\controllers\actions\funcoesgerais\ImportacaoLNGAction',
+	    'importacaovannucci3'       	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucci3Action',
+	    'importacaoimagemlng'       	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemLNGAction',
+	    'importacaovannuccimariana' 	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucciMarianaAction',
+	    'importacaovannuccicorrecao'	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucciCorrecaoAction',
+	    'correcaobr'     			=> 'console\controllers\actions\funcoesgerais\CorrecaoBRAction',
+	    'importarimagemfconfourto'      	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemFConfourtoAction',
+	    'correcaogauss'                 	=> 'console\controllers\actions\funcoesgerais\CorrecaoGaussAction',
+	    'importacaobr'                  	=> 'console\controllers\actions\funcoesgerais\ImportacaoBRAction',
+	    'importardib'			=> 'console\controllers\actions\funcoesgerais\ImportacaoDibAction',
+	    'importarimagensdib'            	=> 'console\controllers\actions\funcoesgerais\ImportacaoImagemDibAction',
+	    'atualizarprecos'               	=> 'console\controllers\actions\funcoesgerais\AtualizarPrecosFilialAction',
+	    'importacaovannucci4'           	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucci4Action',
+	    'importacaovannucci5'           	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucci5Action',
+	    'importacaovannuccisemtratar'   	=> 'console\controllers\actions\funcoesgerais\ImportacaoVannucciSemTratarAction',
+	    'importacaolngitalo'     		=> 'console\controllers\actions\funcoesgerais\ImportacaoLNGItaloAction',
+	    'correcaobrmariana'			=> 'console\controllers\actions\funcoesgerais\CorrecaoBRMarianaAction',
+	    'criarcaixasdib'                	=> 'console\controllers\actions\funcoesgerais\CriarCaixasDibAction',
+	    'dibprecocaixa'                 	=> 'console\controllers\actions\funcoesgerais\AtualizarPrecosDibAction',
+	    'correcaodib'                 	=> 'console\controllers\actions\funcoesgerais\CorrecaoDibAction',
+	    'atualizarquantidadelng'        	=> 'console\controllers\actions\funcoesgerais\AtualizarQuantidadeLNGAction',
+	    atualizarprecoestoquedib'atualizarprecoestoquedib'      => 'console\controllers\actions\funcoesgerais\AtualizarPrecosEstoqueDibAction',
+        ]);
+    }
+}
